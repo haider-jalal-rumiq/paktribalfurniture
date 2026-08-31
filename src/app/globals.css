@@ -1,26 +1,133 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+/* ---------------------------------------------------------------------------
+   Warm Sonoran palette.
+
+   Contrast against --color-canvas: ink ~15:1, clay ~5:1, sage ~7:1 (all AA for
+   body copy). --color-stone is ~3.4:1 — large text, icons and borders only.
+--------------------------------------------------------------------------- */
+@theme {
+  --color-ink: #1a1512;
+  --color-ink-soft: #3b322c;
+  --color-canvas: #faf6f0;
+  --color-canvas-deep: #f1e9dd;
+  --color-surface: #ffffff;
+  --color-clay: #b4552d;
+  --color-clay-deep: #8f4123;
+  --color-ember: #e08c3e;
+  --color-sage: #4a5d4e;
+  --color-stone: #8c8073;
+  --color-hairline: #e2d7c8;
+
+  --font-display: var(--font-fraunces), ui-serif, Georgia, serif;
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+
+  /* Fluid type scale, ~1.25 ratio, clamped between 375px and 1440px viewports. */
+  --text-xs: clamp(0.75rem, 0.73rem + 0.09vw, 0.8rem);
+  --text-sm: clamp(0.875rem, 0.85rem + 0.11vw, 0.938rem);
+  --text-base: clamp(1rem, 0.96rem + 0.17vw, 1.125rem);
+  --text-lg: clamp(1.125rem, 1.06rem + 0.28vw, 1.313rem);
+  --text-xl: clamp(1.375rem, 1.26rem + 0.49vw, 1.688rem);
+  --text-2xl: clamp(1.688rem, 1.5rem + 0.8vw, 2.188rem);
+  --text-3xl: clamp(2.063rem, 1.76rem + 1.29vw, 2.875rem);
+  --text-4xl: clamp(2.5rem, 2.02rem + 2.05vw, 3.813rem);
+  --text-5xl: clamp(3rem, 2.24rem + 3.24vw, 5rem);
+
+  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
+
+  --radius-card: 0.875rem;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+/* ---------------------------------------------------------------------------
+   Base
+--------------------------------------------------------------------------- */
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    /* Sticky header height, so in-page anchors don't land under it. */
+    scroll-padding-top: 6rem;
+    -webkit-text-size-adjust: 100%;
+  }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  body {
+    background-color: var(--color-canvas);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: var(--text-base);
+    line-height: 1.65;
+    text-rendering: optimizeLegibility;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    font-family: var(--font-display);
+    font-weight: 600;
+    line-height: 1.08;
+    letter-spacing: -0.02em;
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  /* One visible focus treatment everywhere, on the ember accent. */
+  :focus-visible {
+    outline: 2px solid var(--color-ember);
+    outline-offset: 3px;
+    border-radius: 2px;
+  }
+
+  ::selection {
+    background-color: var(--color-ember);
+    color: var(--color-ink);
+  }
+
+  /* Fraunces' optical-size axis: tighten large display text, relax small. */
+  .font-display {
+    font-variation-settings: "SOFT" 30, "WONK" 1;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* ---------------------------------------------------------------------------
+   Reduced motion.
+
+   Component-level animation is gated in JS by useReducedMotionSafe(); this is
+   the backstop for CSS transitions, smooth scrolling and any stray keyframes.
+--------------------------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+@utility text-balance {
+  text-wrap: balance;
+}
+
+/* ---------------------------------------------------------------------------
+   Hero backdrop drift. CSS rather than JS — the reduced-motion block above
+   already neutralises it.
+--------------------------------------------------------------------------- */
+@keyframes ken-burns {
+  from {
+    transform: scale(1.04) translate3d(0, 0, 0);
+  }
+  to {
+    transform: scale(1.14) translate3d(-1.5%, -1.5%, 0);
+  }
+}
+
+@utility ken-burns {
+  animation: ken-burns 22s var(--ease-out-soft) forwards;
 }
