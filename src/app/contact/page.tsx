@@ -1,44 +1,36 @@
-import { Mail } from "lucide-react";
+import type { Metadata } from "next";
 
-import { AppointmentSection } from "@/components/appointment-section";
+import { Container } from "@/components/layout/container";
 import { PageHero } from "@/components/layout/page-hero";
-import { VisitSection } from "@/components/visit-section";
+import { Reveal } from "@/components/motion";
+import { InquiryForm } from "@/features/inquiry/inquiry-form";
+import { getCategory } from "@/content/catalog";
 import { site } from "@/content/site";
-import { JsonLd, breadcrumbSchema, pageMetadata } from "@/lib/seo";
+import { pageMetadata } from "@/lib/seo";
 
-export const metadata = pageMetadata({
-  title: "Visit Us",
-  description:
-    "Sundance Optical, 4201 N 16th Street Suite 160, Phoenix AZ 85016. Open weekdays 8am–5pm. Call (602) 277-5007 or request an appointment online.",
-  path: "/contact",
-});
+export const metadata: Metadata = pageMetadata({ title: "Contact and enquiries", description: "Send a furniture enquiry to Pak Tribal Furniture and continue the conversation on WhatsApp.", path: "/contact" });
 
-export default function ContactPage() {
+export default async function ContactPage({ searchParams }: { searchParams: Promise<{ category?: string }> }) {
+  const { category } = await searchParams;
+  const selected = category ? getCategory(category) : undefined;
   return (
     <>
-      <PageHero
-        eyebrow="Visit us"
-        title="On 16th Street, weekdays 8 to 5"
-        lede="Walk in, or send a request and we will call you back. Either way you will be talking to the optician, not a call centre."
-      >
-        <a
-          href={`mailto:${site.email}`}
-          className="inline-flex items-center gap-2.5 text-base font-medium text-ink-soft transition-colors hover:text-clay"
-        >
-          <Mail className="h-4 w-4 shrink-0 text-clay" aria-hidden="true" />
-          {site.email}
-        </a>
-      </PageHero>
-
-      <VisitSection heading={false} />
-      <AppointmentSection />
-
-      <JsonLd
-        data={breadcrumbSchema([
-          { name: "Home", path: "/" },
-          { name: "Visit Us", path: "/contact" },
-        ])}
-      />
+      <PageHero eyebrow="Start a conversation" title="Your next piece starts with a few details." description="Share what you need. Your enquiry is recorded, then WhatsApp opens with everything ready to send." />
+      <section className="py-16 sm:py-24">
+        <Container className="grid gap-10 lg:grid-cols-[0.72fr_1.28fr] lg:gap-16">
+          <Reveal>
+            <h2 className="font-display text-4xl text-ink">Prefer to message directly?</h2>
+            <p className="mt-4 max-w-sm text-base leading-7 text-ink-soft">You can reach Pak Tribal Furniture on WhatsApp or browse the latest brand updates on Instagram.</p>
+            <div className="mt-7 space-y-3 text-sm font-semibold">
+              <a href={site.whatsapp.href} className="block text-accent underline underline-offset-4">WhatsApp {site.whatsapp.display}</a>
+              <a href={site.instagramUrl} target="_blank" rel="noreferrer" className="block text-accent underline underline-offset-4">Instagram @paktribalfurniture</a>
+            </div>
+          </Reveal>
+          <Reveal id="enquiry" className="scroll-mt-28 border border-hairline bg-surface p-6 sm:p-10">
+            <InquiryForm categorySlug={selected?.slug} />
+          </Reveal>
+        </Container>
+      </section>
     </>
   );
 }

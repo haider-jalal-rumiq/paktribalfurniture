@@ -1,76 +1,72 @@
 import type { Metadata, Viewport } from "next";
-import { Fraunces, Inter } from "next/font/google";
+import { Cormorant_Garamond, Manrope } from "next/font/google";
+import type { ReactNode } from "react";
 
 import { Footer } from "@/components/layout/footer";
 import { Header } from "@/components/layout/header";
 import { site } from "@/content/site";
-import { JsonLd, localBusinessSchema } from "@/lib/seo";
+import { JsonLd, organizationSchema } from "@/lib/seo";
 
 import "./globals.css";
 
-const inter = Inter({
-  variable: "--font-inter",
+const manrope = Manrope({
+  variable: "--font-manrope",
   subsets: ["latin"],
   display: "swap",
 });
 
-const fraunces = Fraunces({
-  variable: "--font-fraunces",
+const cormorant = Cormorant_Garamond({
+  variable: "--font-cormorant",
   subsets: ["latin"],
   display: "swap",
-  axes: ["SOFT", "WONK", "opsz"],
+  weight: ["500", "600", "700"],
 });
 
 export const metadata: Metadata = {
   metadataBase: new URL(site.url),
   title: {
-    default: `${site.name} — Licensed Opticians in Phoenix, Arizona`,
-    template: `%s — ${site.name}`,
+    default: `${site.name} | Solid-Wood Furniture`,
+    template: `%s | ${site.name}`,
   },
   description: site.description,
   applicationName: site.name,
-  alternates: { canonical: site.url },
+  alternates: { canonical: "/" },
   keywords: [
-    "optician Phoenix",
-    "eyeglasses Phoenix",
-    "prescription glasses Phoenix AZ",
-    "veteran owned optician",
-    "AHCCCS glasses Phoenix",
-    "Native Visions eyewear",
+    "Pak Tribal Furniture",
+    "solid wood furniture Pakistan",
+    "rosewood furniture",
+    "custom furniture",
+    "wooden beds",
+    "wooden dining tables",
   ],
-  authors: [{ name: site.legalName }],
   robots: { index: true, follow: true },
   openGraph: {
     type: "website",
-    locale: "en_US",
+    locale: "en_PK",
     siteName: site.name,
     url: site.url,
+    images: ["/images/furniture/hero-living-room.jpg"],
+  },
+  twitter: {
+    card: "summary_large_image",
+    images: ["/images/furniture/hero-living-room.jpg"],
   },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#faf6f0",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f3f4ef" },
+    { media: "(prefers-color-scheme: dark)", color: "#101714" },
+  ],
 };
 
-export default function RootLayout({ children }: LayoutProps<"/">) {
+export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html
-      lang="en"
-      className={`${inter.variable} ${fraunces.variable} h-full antialiased`}
-    >
-      <head>
-        {/*
-          Scroll reveals start at opacity 0 and are raised by JS. If JS never
-          runs, the page would look empty — this restores everything.
-        */}
-        <noscript>
-          <style>{`[style*="opacity:0"],[style*="opacity: 0"]{opacity:1!important;transform:none!important}`}</style>
-        </noscript>
-      </head>
-      <body className="flex min-h-full flex-col">
+    <html lang="en" className={`${manrope.variable} ${cormorant.variable} antialiased`}>
+      <body className="flex min-h-[100dvh] flex-col">
         <a
           href="#main"
-          className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[60] focus:rounded-full focus:bg-ink focus:px-5 focus:py-3 focus:text-sm focus:font-medium focus:text-canvas"
+          className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:bg-ink focus:px-5 focus:py-3 focus:text-sm focus:font-semibold focus:text-canvas"
         >
           Skip to content
         </a>
@@ -79,7 +75,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           {children}
         </main>
         <Footer />
-        <JsonLd data={localBusinessSchema()} />
+        <JsonLd data={organizationSchema()} />
       </body>
     </html>
   );

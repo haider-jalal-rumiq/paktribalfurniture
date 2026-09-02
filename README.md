@@ -1,36 +1,54 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Pak Tribal Furniture
 
-## Getting Started
+An animated, responsive furniture catalogue built with Next.js 16, React 19, Tailwind CSS 4, Motion, and Supabase.
 
-First, run the development server:
+## What is included
+
+- Eight furniture collections and five wood choices
+- CMS-managed products with multiple photos, drafts, publishing, and featured placement
+- Customer enquiries saved to Supabase before a prefilled WhatsApp handoff
+- A protected Studio dashboard for products and recent enquiries
+- Responsive light and dark color systems with reduced-motion support
+
+## Local setup
+
+Use Node.js 22 or newer.
 
 ```bash
+npm install
+copy .env.example .env.local
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+The public catalogue works without Supabase, but products stay empty and enquiry submissions show a direct WhatsApp fallback until the database is connected.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Supabase setup
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+1. Create a dedicated Supabase project for Pak Tribal Furniture. Do not reuse an unrelated production project.
+2. Open the SQL editor and run `supabase/schema.sql` once. It creates the tables, indexes, row-level security policies, explicit Data API grants, and the `product-images` Storage bucket.
+3. Copy the project URL and publishable key into `.env.local` as `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`.
+4. Keep public email signups disabled in Supabase Auth.
+5. Create the owner account in Authentication, then assign this account the admin role in its `app_metadata`:
 
-## Learn More
+```json
+{ "role": "admin" }
+```
 
-To learn more about Next.js, take a look at the following resources:
+Only `app_metadata` is trusted for authorization. Never put an admin role in user-editable metadata and never expose a secret or service-role key to the browser.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+The private CMS is available at `/studio`. Public products appear only when their `published` switch is enabled.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Checks
 
-## Deploy on Vercel
+```bash
+npm run lint
+npm run typecheck
+npm run build
+npm run verify
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+The Playwright verifier writes screenshots and a report to `.verify/`.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Brand assets
+
+The supplied Pak Tribal Furniture logo files remain in the project root. Optimized web versions live in `public/images/brand-horizontal.png` and `public/images/brand-mark.png`. The furniture photography in `public/images/furniture/` is placeholder imagery and should be replaced with the business's own product photography through Studio before launch.

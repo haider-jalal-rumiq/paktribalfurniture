@@ -1,98 +1,52 @@
 import Link from "next/link";
-import { Mail, MapPin, Phone } from "lucide-react";
+import { Camera, MessageCircle } from "lucide-react";
 
 import { Container } from "@/components/layout/container";
-import { LogoMark } from "@/components/layout/logo";
+import { Logo } from "@/components/layout/logo";
 import { navLinks } from "@/components/layout/nav";
-import { HoursTable } from "@/features/hours/hours-table";
 import { site } from "@/content/site";
 
 export function Footer() {
   return (
-    <footer className="mt-auto bg-ink text-canvas">
-      <Container className="grid gap-12 py-16 md:grid-cols-3 md:py-20">
-        <div className="flex flex-col gap-5">
-          <div className="flex items-center gap-3">
-            <LogoMark className="text-ember" />
-            <span className="font-display text-xl font-semibold">
-              Sundance Optical
-            </span>
-          </div>
-          <p className="max-w-xs text-sm leading-relaxed text-canvas/65">
-            Licensed opticians on 16th Street. From a family caring for Phoenix
-            eyes since 1951.
+    <footer className="border-t border-hairline bg-canvas-deep">
+      <Container className="grid gap-10 py-14 md:grid-cols-[1.3fr_1fr_1fr] md:py-20">
+        <div>
+          <Logo className="w-44" />
+          <p className="mt-5 max-w-sm text-sm leading-7 text-muted">
+            A considered catalogue of furniture for homes that value natural materials, useful form, and Pakistani craft.
           </p>
-          <ul className="flex flex-col gap-3 text-sm">
-            <li>
-              <a
-                href={site.phoneHref}
-                className="inline-flex items-center gap-2.5 text-canvas/80 transition-colors hover:text-ember"
-              >
-                <Phone className="h-4 w-4 shrink-0" aria-hidden="true" />
-                {site.phone}
-              </a>
-            </li>
-            <li>
-              <a
-                href={`mailto:${site.email}`}
-                className="inline-flex items-center gap-2.5 text-canvas/80 transition-colors hover:text-ember"
-              >
-                <Mail className="h-4 w-4 shrink-0" aria-hidden="true" />
-                {site.email}
-              </a>
-            </li>
-            <li>
-              <a
-                href={site.mapsUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex items-start gap-2.5 text-canvas/80 transition-colors hover:text-ember"
-              >
-                <MapPin className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
-                <span>
-                  {site.address.street}, {site.address.suite}
-                  <br />
-                  {site.address.city}, {site.address.state} {site.address.zip}
-                </span>
-              </a>
-            </li>
-          </ul>
         </div>
-
-        <nav aria-label="Footer" className="flex flex-col gap-5">
-          <h2 className="font-display text-sm font-semibold uppercase tracking-[0.16em] text-ember">
-            Explore
-          </h2>
-          <ul className="flex flex-col gap-3 text-sm">
-            {[{ label: "Home", href: "/" }, ...navLinks].map((link) => (
+        <div>
+          <h2 className="text-xs font-bold uppercase tracking-[0.18em] text-muted">Explore</h2>
+          <ul className="mt-5 space-y-3">
+            {navLinks.map((link) => (
               <li key={link.href}>
-                <Link
-                  href={link.href}
-                  className="text-canvas/80 transition-colors hover:text-ember"
-                >
-                  {link.label}
-                </Link>
+                <Link href={link.href} className="text-sm font-semibold text-ink-soft transition-colors hover:text-accent">{link.label}</Link>
               </li>
             ))}
           </ul>
-        </nav>
-
-        <div className="flex flex-col gap-5">
-          <h2 className="font-display text-sm font-semibold uppercase tracking-[0.16em] text-ember">
-            Hours
-          </h2>
-          <HoursTable tone="dark" />
+        </div>
+        <div>
+          <h2 className="text-xs font-bold uppercase tracking-[0.18em] text-muted">Connect</h2>
+          <div className="mt-5 space-y-3">
+            <a href={site.whatsapp.href} className="flex items-center gap-2 text-sm font-semibold text-ink-soft transition-colors hover:text-accent">
+              <MessageCircle className="h-4 w-4" aria-hidden="true" />
+              {site.whatsapp.display}
+            </a>
+            <a href={site.instagramUrl} target="_blank" rel="noreferrer" className="flex items-center gap-2 text-sm font-semibold text-ink-soft transition-colors hover:text-accent">
+              <Camera className="h-4 w-4" aria-hidden="true" />
+              @paktribalfurniture
+            </a>
+          </div>
         </div>
       </Container>
-
-      <div className="border-t border-white/10">
-        <Container className="flex flex-col gap-2 py-6 text-xs text-canvas/50 sm:flex-row sm:items-center sm:justify-between">
-          <p>
-            © {new Date().getFullYear()} {site.legalName}. All rights reserved.
-          </p>
-          <p>Veteran owned and operated in Phoenix, Arizona.</p>
-        </Container>
-      </div>
+      <Container className="flex flex-col gap-3 border-t border-hairline py-5 text-xs text-muted sm:flex-row sm:items-center sm:justify-between">
+        <p>© {new Date().getFullYear()} {site.name}. All rights reserved.</p>
+        <div className="flex gap-5">
+          <Link href="/privacy" className="hover:text-ink">Privacy</Link>
+          <Link href="/studio" className="hover:text-ink">Studio</Link>
+        </div>
+      </Container>
     </footer>
   );
 }

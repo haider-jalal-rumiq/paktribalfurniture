@@ -5,22 +5,20 @@ import type { ComponentProps } from "react";
 import { cn } from "@/lib/utils";
 
 const button = cva(
-  "inline-flex items-center justify-center gap-2 rounded-full font-medium tracking-tight transition-[transform,background-color,color,border-color] duration-200 ease-[var(--ease-out-soft)] active:scale-[0.98] disabled:pointer-events-none disabled:opacity-55",
+  "inline-flex min-h-11 items-center justify-center gap-2 rounded-[var(--radius-ui)] font-semibold tracking-[-0.01em] transition-[transform,background-color,color,border-color] duration-200 ease-[var(--ease-out-soft)] hover:-translate-y-0.5 active:translate-y-0 disabled:pointer-events-none disabled:opacity-55",
   {
     variants: {
       variant: {
-        primary: "bg-clay text-white hover:bg-clay-deep",
+        primary: "bg-accent text-white hover:bg-accent-deep",
         secondary: "bg-ink text-canvas hover:bg-ink-soft",
         outline:
-          "border border-ink/25 text-ink hover:border-ink hover:bg-ink hover:text-canvas",
-        ghost: "text-ink hover:bg-ink/6",
-        onDark:
-          "border border-white/30 text-white hover:border-white hover:bg-white hover:text-ink",
+          "border border-hairline bg-transparent text-ink hover:border-ink hover:bg-ink hover:text-canvas",
+        ghost: "text-ink hover:bg-wash",
       },
       size: {
         sm: "px-4 py-2 text-sm",
-        md: "px-6 py-3 text-base",
-        lg: "px-8 py-4 text-lg",
+        md: "px-5 py-3 text-sm",
+        lg: "px-7 py-4 text-base",
       },
     },
     defaultVariants: { variant: "primary", size: "md" },
@@ -40,7 +38,6 @@ export function Button({
   );
 }
 
-/** Same visual treatment, but a real link — keeps semantics honest. */
 export function ButtonLink({
   className,
   variant,

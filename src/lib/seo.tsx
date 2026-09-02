@@ -1,32 +1,20 @@
 import type { Metadata } from "next";
 
-import { openingHours, site } from "@/content/site";
-
-const DAY_SCHEMA = [
-  "Sunday",
-  "Monday",
-  "Tuesday",
-  "Wednesday",
-  "Thursday",
-  "Friday",
-  "Saturday",
-] as const;
+import { site } from "@/content/site";
+import type { Product } from "@/types/database";
 
 interface PageMetaOptions {
   title: string;
   description: string;
-  /** Route path, e.g. "/eyewear". Use "/" for the home page. */
   path: string;
+  image?: string;
 }
 
-/**
- * Per-page metadata with a canonical URL. Titles are composed by the template
- * in the root layout, so pass the bare page title here.
- */
 export function pageMetadata({
   title,
   description,
   path,
+  image = "/images/furniture/hero-living-room.jpg",
 }: PageMetaOptions): Metadata {
   const url = new URL(path, site.url).toString();
 
@@ -37,83 +25,53 @@ export function pageMetadata({
     openGraph: {
       type: "website",
       siteName: site.name,
-      title: `${title} — ${site.name}`,
+      title: `${title} | ${site.name}`,
       description,
       url,
-      locale: "en_US",
+      locale: "en_PK",
+      images: [image],
     },
     twitter: {
       card: "summary_large_image",
-      title: `${title} — ${site.name}`,
+      title: `${title} | ${site.name}`,
       description,
+      images: [image],
     },
   };
 }
 
-function toIsoTime(minutes: number): string {
-  const hour = Math.floor(minutes / 60);
-  return `${hour.toString().padStart(2, "0")}:${(minutes % 60)
-    .toString()
-    .padStart(2, "0")}`;
-}
-
-/**
- * Optician / LocalBusiness structured data.
- *
- * This is the single biggest SEO gap on the current site — without it Google
- * has no machine-readable hours, location or service area for the shop.
- */
-export function localBusinessSchema(): Record<string, unknown> {
-  const open = openingHours.filter(
-    (entry): entry is typeof entry & { opens: number; closes: number } =>
-      entry.opens !== null && entry.closes !== null,
-  );
-
+export function organizationSchema(): Record<string, unknown> {
   return {
     "@context": "https://schema.org",
-    "@type": "Optician",
-    "@id": `${site.url}/#business`,
+    "@type": "Organization",
+    "@id": `${site.url}/#organization`,
     name: site.name,
-    legalName: site.legalName,
-    description: site.description,
     url: site.url,
-    telephone: site.phone,
-    email: site.email,
-    priceRange: "$$",
-    currenciesAccepted: "USD",
-    paymentAccepted: "Cash, Credit Card, AHCCCS, American Indian Health Plan",
-    address: {
-      "@type": "PostalAddress",
-      streetAddress: `${site.address.street}, ${site.address.suite}`,
-      addressLocality: site.address.city,
-      addressRegion: site.address.state,
-      postalCode: site.address.zip,
-      addressCountry: site.address.country,
+    description: site.description,
+    logo: new URL("/images/brand-mark.png", site.url).toString(),
+    sameAs: [site.instagramUrl],
+    contactPoint: {
+      "@type": "ContactPoint",
+      contactType: "sales",
+      telephone: site.whatsapp.display,
+      availableLanguage: ["English", "Urdu"],
     },
-    geo: {
-      "@type": "GeoCoordinates",
-      latitude: site.geo.latitude,
-      longitude: site.geo.longitude,
+  };
+}
+
+export function productSchema(product: Product): Record<string, unknown> {
+  return {
+    "@context": "https://schema.org",
+    "@type": "Product",
+    name: product.name,
+    description: product.short_description,
+    image: product.image_urls.map((image) => new URL(image, site.url).toString()),
+    url: new URL(`/collections/${product.slug}`, site.url).toString(),
+    material: product.wood_types,
+    brand: {
+      "@type": "Brand",
+      name: site.name,
     },
-    hasMap: site.mapsUrl,
-    areaServed: {
-      "@type": "City",
-      name: "Phoenix",
-      containedInPlace: { "@type": "State", name: "Arizona" },
-    },
-    openingHoursSpecification: open.map((entry) => ({
-      "@type": "OpeningHoursSpecification",
-      dayOfWeek: `https://schema.org/${DAY_SCHEMA[entry.day]}`,
-      opens: toIsoTime(entry.opens),
-      closes: toIsoTime(entry.closes),
-    })),
-    knowsAbout: [
-      "Prescription eyeglasses",
-      "Prescription sunglasses",
-      "Eyeglass repair",
-      "Contact lens prescriptions",
-      "Veteran vision benefits",
-    ],
   };
 }
 
@@ -132,7 +90,6 @@ export function breadcrumbSchema(
   };
 }
 
-/** Renders JSON-LD. Server-only: the object never reaches the client bundle. */
 export function JsonLd({ data }: { data: Record<string, unknown> }) {
   return (
     <script

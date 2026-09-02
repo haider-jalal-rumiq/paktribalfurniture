@@ -1,61 +1,76 @@
 @import "tailwindcss";
 
-/* ---------------------------------------------------------------------------
-   Warm Sonoran palette.
-
-   Contrast against --color-canvas: ink ~15:1, clay ~5:1, sage ~7:1 (all AA for
-   body copy). --color-stone is ~3.4:1 — large text, icons and borders only.
---------------------------------------------------------------------------- */
 @theme {
-  --color-ink: #1a1512;
-  --color-ink-soft: #3b322c;
-  --color-canvas: #faf6f0;
-  --color-canvas-deep: #f1e9dd;
-  --color-surface: #ffffff;
-  --color-clay: #b4552d;
-  --color-clay-deep: #8f4123;
-  --color-ember: #e08c3e;
-  --color-sage: #4a5d4e;
-  --color-stone: #8c8073;
-  --color-hairline: #e2d7c8;
+  --color-canvas: #f3f4ef;
+  --color-canvas-deep: #e6e9e1;
+  --color-surface: #fbfcf8;
+  --color-ink: #14201c;
+  --color-ink-soft: #31423b;
+  --color-muted: #66746e;
+  --color-accent: #963b36;
+  --color-accent-deep: #722b28;
+  --color-hairline: #cbd2c8;
+  --color-wash: #dce3da;
 
-  --font-display: var(--font-fraunces), ui-serif, Georgia, serif;
-  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-cormorant), ui-serif, Georgia, serif;
+  --font-sans: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
 
-  /* Fluid type scale, ~1.25 ratio, clamped between 375px and 1440px viewports. */
-  --text-xs: clamp(0.75rem, 0.73rem + 0.09vw, 0.8rem);
-  --text-sm: clamp(0.875rem, 0.85rem + 0.11vw, 0.938rem);
-  --text-base: clamp(1rem, 0.96rem + 0.17vw, 1.125rem);
-  --text-lg: clamp(1.125rem, 1.06rem + 0.28vw, 1.313rem);
-  --text-xl: clamp(1.375rem, 1.26rem + 0.49vw, 1.688rem);
-  --text-2xl: clamp(1.688rem, 1.5rem + 0.8vw, 2.188rem);
-  --text-3xl: clamp(2.063rem, 1.76rem + 1.29vw, 2.875rem);
-  --text-4xl: clamp(2.5rem, 2.02rem + 2.05vw, 3.813rem);
-  --text-5xl: clamp(3rem, 2.24rem + 3.24vw, 5rem);
+  --text-xs: clamp(0.75rem, 0.73rem + 0.08vw, 0.8rem);
+  --text-sm: clamp(0.875rem, 0.84rem + 0.13vw, 0.95rem);
+  --text-base: clamp(1rem, 0.96rem + 0.18vw, 1.1rem);
+  --text-lg: clamp(1.125rem, 1.04rem + 0.35vw, 1.32rem);
+  --text-xl: clamp(1.35rem, 1.22rem + 0.52vw, 1.65rem);
+  --text-2xl: clamp(1.7rem, 1.48rem + 0.88vw, 2.2rem);
+  --text-3xl: clamp(2.1rem, 1.72rem + 1.5vw, 3rem);
+  --text-4xl: clamp(2.75rem, 2.07rem + 2.7vw, 4.3rem);
+  --text-5xl: clamp(3.4rem, 2.35rem + 4.25vw, 5.85rem);
 
-  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
-
-  --radius-card: 0.875rem;
+  --ease-out-soft: cubic-bezier(0.16, 1, 0.3, 1);
+  --radius-ui: 0.35rem;
 }
 
-/* ---------------------------------------------------------------------------
-   Base
---------------------------------------------------------------------------- */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-canvas: #101714;
+    --color-canvas-deep: #18211d;
+    --color-surface: #1b2521;
+    --color-ink: #ecf0e9;
+    --color-ink-soft: #c8d0c9;
+    --color-muted: #9ba9a1;
+    --color-accent: #d06b62;
+    --color-accent-deep: #e1847c;
+    --color-hairline: #35433d;
+    --color-wash: #22312b;
+  }
+}
+
 @layer base {
   html {
     scroll-behavior: smooth;
-    /* Sticky header height, so in-page anchors don't land under it. */
     scroll-padding-top: 6rem;
     -webkit-text-size-adjust: 100%;
   }
 
   body {
-    background-color: var(--color-canvas);
+    min-width: 20rem;
+    background:
+      radial-gradient(circle at 86% 8%, color-mix(in srgb, var(--color-wash) 58%, transparent), transparent 26rem),
+      var(--color-canvas);
     color: var(--color-ink);
     font-family: var(--font-sans);
     font-size: var(--text-base);
     line-height: 1.65;
     text-rendering: optimizeLegibility;
+  }
+
+  body::before {
+    position: fixed;
+    z-index: 40;
+    inset: 0;
+    pointer-events: none;
+    content: "";
+    opacity: 0.025;
+    background-image: repeating-radial-gradient(circle at 17% 23%, var(--color-ink) 0 0.04rem, transparent 0.05rem 0.25rem);
   }
 
   h1,
@@ -64,8 +79,8 @@
   h4 {
     font-family: var(--font-display);
     font-weight: 600;
-    line-height: 1.08;
-    letter-spacing: -0.02em;
+    line-height: 0.98;
+    letter-spacing: -0.025em;
     text-wrap: balance;
   }
 
@@ -73,30 +88,49 @@
     text-wrap: pretty;
   }
 
-  /* One visible focus treatment everywhere, on the ember accent. */
+  a,
+  button,
+  input,
+  select,
+  textarea {
+    border-radius: var(--radius-ui);
+  }
+
   :focus-visible {
-    outline: 2px solid var(--color-ember);
+    outline: 2px solid var(--color-accent);
     outline-offset: 3px;
-    border-radius: 2px;
   }
 
   ::selection {
-    background-color: var(--color-ember);
-    color: var(--color-ink);
-  }
-
-  /* Fraunces' optical-size axis: tighten large display text, relax small. */
-  .font-display {
-    font-variation-settings: "SOFT" 30, "WONK" 1;
+    background: var(--color-accent);
+    color: var(--color-surface);
   }
 }
 
-/* ---------------------------------------------------------------------------
-   Reduced motion.
+@utility text-balance {
+  text-wrap: balance;
+}
 
-   Component-level animation is gated in JS by useReducedMotionSafe(); this is
-   the backstop for CSS transitions, smooth scrolling and any stray keyframes.
---------------------------------------------------------------------------- */
+@utility edge-frame {
+  border: 1px solid color-mix(in srgb, var(--color-hairline) 88%, transparent);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, var(--color-surface) 60%, transparent);
+}
+
+@keyframes image-drift {
+  from {
+    transform: scale(1.025);
+  }
+  to {
+    transform: scale(1.08);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .image-drift {
+    animation: image-drift 18s var(--ease-out-soft) forwards;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
@@ -109,25 +143,10 @@
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
   }
-}
 
-@utility text-balance {
-  text-wrap: balance;
-}
-
-/* ---------------------------------------------------------------------------
-   Hero backdrop drift. CSS rather than JS — the reduced-motion block above
-   already neutralises it.
---------------------------------------------------------------------------- */
-@keyframes ken-burns {
-  from {
-    transform: scale(1.04) translate3d(0, 0, 0);
+  [data-motion-reveal],
+  [data-motion-parallax] {
+    opacity: 1 !important;
+    transform: none !important;
   }
-  to {
-    transform: scale(1.14) translate3d(-1.5%, -1.5%, 0);
-  }
-}
-
-@utility ken-burns {
-  animation: ken-burns 22s var(--ease-out-soft) forwards;
 }

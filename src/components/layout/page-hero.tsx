@@ -1,56 +1,15 @@
-import type { ReactNode } from "react";
-
 import { Container } from "@/components/layout/container";
-import { Stagger, StaggerItem } from "@/components/motion";
-import { cn } from "@/lib/utils";
+import { Reveal } from "@/components/motion";
 
-interface PageHeroProps {
-  eyebrow: string;
-  title: string;
-  lede?: ReactNode;
-  children?: ReactNode;
-  className?: string;
-}
-
-/** Shared masthead for every page except the home page. */
-export function PageHero({
-  eyebrow,
-  title,
-  lede,
-  children,
-  className,
-}: PageHeroProps) {
+export function PageHero({ title, description, eyebrow }: { title: string; description: string; eyebrow?: string }) {
   return (
-    <section
-      className={cn(
-        "border-b border-hairline bg-canvas-deep pb-16 pt-36 sm:pb-20 sm:pt-44",
-        className,
-      )}
-    >
+    <section className="border-b border-hairline pb-16 pt-36 sm:pb-20 sm:pt-40">
       <Container>
-        <Stagger className="flex max-w-3xl flex-col gap-5" gap={0.07}>
-          <StaggerItem y={10}>
-            <span className="text-xs font-semibold uppercase tracking-[0.18em] text-clay">
-              {eyebrow}
-            </span>
-          </StaggerItem>
-
-          <span className="block overflow-hidden pb-1">
-            <StaggerItem y="100%">
-              <h1 className="font-display text-4xl text-ink sm:text-5xl">
-                {title}
-              </h1>
-            </StaggerItem>
-          </span>
-
-          {lede && (
-            <StaggerItem>
-              <p className="text-lg leading-relaxed text-ink-soft">{lede}</p>
-            </StaggerItem>
-          )}
-
-          {children && <StaggerItem>{children}</StaggerItem>}
-        </Stagger>
+        <Reveal className="max-w-4xl">
+          {eyebrow && <p className="mb-5 text-xs font-bold uppercase tracking-[0.2em] text-accent">{eyebrow}</p>}
+          <h1 className="max-w-3xl font-display text-5xl leading-[0.92] tracking-[-0.035em] text-ink sm:text-6xl lg:text-7xl">{title}</h1>
+          <p className="mt-6 max-w-2xl text-lg leading-8 text-ink-soft">{description}</p>
+        </Reveal>
       </Container>
     </section>
   );

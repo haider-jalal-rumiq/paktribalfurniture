@@ -1,5 +1,5 @@
 {
-  "name": "sundance-optical",
+  "name": "pak-tribal-furniture",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -8,12 +8,13 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
-    "verify": "node scripts/verify.mjs",
-    "check:hours": "node src/features/hours/hours.check.ts"
+    "verify": "node scripts/verify.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.1",
     "@radix-ui/react-dialog": "^1.1.23",
+    "@supabase/ssr": "0.12.5",
+    "@supabase/supabase-js": "2.112.4",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^1.38.0",
