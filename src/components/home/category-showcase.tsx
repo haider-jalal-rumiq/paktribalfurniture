@@ -1,7 +1,7 @@
 import { CategoryCard } from "@/components/catalog/category-card";
 import { Container } from "@/components/layout/container";
 import { SectionHeading } from "@/components/layout/section-heading";
-import { Reveal } from "@/components/motion";
+import { MaskReveal, TileReveal } from "@/components/motion";
 import { categories } from "@/content/catalog";
 
 const spans = [
@@ -17,16 +17,16 @@ const spans = [
 
 export function CategoryShowcase() {
   return (
-    <section className="py-20 sm:py-28">
+    <section className="py-2 sm:py-8">
       <Container>
-        <Reveal>
+        <MaskReveal>
           <SectionHeading title="A room-by-room catalogue." description="Browse by purpose, then enquire about the details that matter to your space." />
-        </Reveal>
+        </MaskReveal>
         <div className="mt-12 grid auto-rows-[minmax(18rem,auto)] gap-3 lg:grid-cols-12">
           {categories.map((category, index) => (
-            <Reveal key={category.slug} className={spans[index]} delay={(index % 3) * 0.05}>
+            <TileReveal key={category.slug} className={spans[index]} index={index}>
               <CategoryCard category={category} className="h-full" priority={index < 2} />
-            </Reveal>
+            </TileReveal>
           ))}
         </div>
       </Container>

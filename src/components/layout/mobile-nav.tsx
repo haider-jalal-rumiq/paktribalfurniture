@@ -11,15 +11,22 @@ import { navLinks } from "@/components/layout/nav";
 import { useReducedMotionSafe } from "@/components/motion";
 import { ButtonLink } from "@/components/ui/button";
 import { site } from "@/content/site";
+import { cn } from "@/lib/utils";
 
-export function MobileNav() {
+export function MobileNav({ overlay = false }: { overlay?: boolean }) {
   const [open, setOpen] = useState(false);
   const reduce = useReducedMotionSafe();
 
   return (
     <Dialog.Root open={open} onOpenChange={setOpen}>
       <Dialog.Trigger asChild>
-        <button className="inline-flex h-11 w-11 items-center justify-center rounded-[var(--radius-ui)] text-ink hover:bg-wash lg:hidden" aria-label="Open menu">
+        <button
+          className={cn(
+            "inline-flex h-11 w-11 items-center justify-center rounded-[var(--radius-ui)] text-ink hover:bg-wash lg:hidden",
+            overlay && "text-white hover:bg-white/10",
+          )}
+          aria-label="Open menu"
+        >
           <Menu className="h-6 w-6" aria-hidden="true" />
         </button>
       </Dialog.Trigger>
