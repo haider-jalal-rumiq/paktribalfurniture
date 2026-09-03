@@ -26,6 +26,8 @@
   --text-5xl: clamp(3.4rem, 2.35rem + 4.25vw, 5.85rem);
 
   --ease-out-soft: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-out-editorial: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out-editorial: cubic-bezier(0.77, 0, 0.175, 1);
   --radius-ui: 0.35rem;
 }
 
@@ -145,7 +147,8 @@
   }
 
   [data-motion-reveal],
-  [data-motion-parallax] {
+  [data-motion-parallax],
+  [data-hero-frame] {
     opacity: 1 !important;
     transform: none !important;
   }
