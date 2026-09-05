@@ -4,11 +4,39 @@ import { NextResponse, type NextRequest } from "next/server";
 import { claimsAreAdmin } from "@/lib/auth";
 import type { Database } from "@/types/database";
 
+/**
+ * Admin-only areas. Add an entry here and in the matcher in src/proxy.ts —
+ * the gate itself never needs another branch.
+ */
+const PROTECTED_AREAS = [
+  { base: "/studio", login: "/studio/login" },
+  { base: "/cms", login: "/cms/login" },
+] as const;
+
+function areaFor(pathname: string) {
+  return PROTECTED_AREAS.find(
+    (area) => pathname === area.base || pathname.startsWith(`${area.base}/`),
+  );
+}
+
 export async function updateSession(request: NextRequest): Promise<NextResponse> {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
-  const isStudioRoute = request.nextUrl.pathname.startsWith("/studio");
-  const isLoginRoute = request.nextUrl.pathname === "/studio/login";
+  const { pathname } = request.nextUrl;
+
+  // App Router paths are case sensitive, so /CMS would 404. Send it to the
+  // canonical lowercase route. Doing it here rather than in next.config.ts
+  // matters: redirect `source` matching is case INSENSITIVE, so a "/CMS" rule
+  // there also catches "/cms" and loops forever.
+  const lowercased = pathname.toLowerCase();
+  if (pathname !== lowercased && areaFor(lowercased)) {
+    const canonical = request.nextUrl.clone();
+    canonical.pathname = lowercased;
+    return NextResponse.redirect(canonical);
+  }
+
+  const area = areaFor(pathname);
+  const isLoginRoute = area?.login === pathname;
 
   if (!url || !key) return NextResponse.next({ request });
 
@@ -35,16 +63,16 @@ export async function updateSession(request: NextRequest): Promise<NextResponse>
   const claims = data?.claims as Record<string, unknown> | undefined;
   const admin = claimsAreAdmin(claims);
 
-  if (isStudioRoute && !isLoginRoute && !admin) {
+  if (area && !isLoginRoute && !admin) {
     const redirectUrl = request.nextUrl.clone();
-    redirectUrl.pathname = "/studio/login";
+    redirectUrl.pathname = area.login;
     redirectUrl.searchParams.set("reason", claims ? "access" : "login");
     return NextResponse.redirect(redirectUrl);
   }
 
-  if (isLoginRoute && admin) {
+  if (area && isLoginRoute && admin) {
     const redirectUrl = request.nextUrl.clone();
-    redirectUrl.pathname = "/studio";
+    redirectUrl.pathname = area.base;
     redirectUrl.search = "";
     return NextResponse.redirect(redirectUrl);
   }

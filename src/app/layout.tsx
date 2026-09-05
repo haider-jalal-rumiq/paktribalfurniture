@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Cormorant_Garamond, Manrope } from "next/font/google";
 import type { ReactNode } from "react";
 
+import { ChromeGate } from "@/components/layout/chrome-gate";
 import { Footer } from "@/components/layout/footer";
 import { Header } from "@/components/layout/header";
 import { site } from "@/content/site";
@@ -70,11 +71,15 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         >
           Skip to content
         </a>
-        <Header />
+        <ChromeGate>
+          <Header />
+        </ChromeGate>
         <main id="main" className="flex-1">
           {children}
         </main>
-        <Footer />
+        <ChromeGate>
+          <Footer />
+        </ChromeGate>
         <JsonLd data={organizationSchema()} />
       </body>
     </html>

@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Field, Input, Select, Textarea } from "@/components/ui/field";
 import { categories } from "@/content/catalog";
 import { woodTypes } from "@/content/site";
+import { submitRequest } from "@/lib/submit";
 import type { Product } from "@/types/database";
 
 function slugify(value: string): string {
@@ -28,10 +29,9 @@ export function ProductEditor({ product }: { product?: Product }) {
     event.preventDefault();
     setSaving(true);
     setError("");
-    const response = await fetch(product ? `/api/studio/products/${product.id}` : "/api/studio/products", { method: product ? "PUT" : "POST", body: new FormData(event.currentTarget) });
-    const result = await response.json() as { message?: string; id?: string };
-    if (!response.ok || !result.id) {
-      setError(result.message ?? "The product could not be saved.");
+    const result = await submitRequest(product ? `/api/studio/products/${product.id}` : "/api/studio/products", { method: product ? "PUT" : "POST", body: new FormData(event.currentTarget) }, "The product could not be saved.");
+    if (!result.ok || !result.id) {
+      setError(result.message || "The product could not be saved.");
       setSaving(false);
       return;
     }
@@ -44,10 +44,9 @@ export function ProductEditor({ product }: { product?: Product }) {
     if (!product || !window.confirm(`Delete ${product.name}? This cannot be undone.`)) return;
     setDeleting(true);
     setError("");
-    const response = await fetch(`/api/studio/products/${product.id}`, { method: "DELETE" });
-    if (!response.ok) {
-      const result = await response.json() as { message?: string };
-      setError(result.message ?? "The product could not be deleted.");
+    const result = await submitRequest(`/api/studio/products/${product.id}`, { method: "DELETE" }, "The product could not be deleted.");
+    if (!result.ok) {
+      setError(result.message);
       setDeleting(false);
       return;
     }

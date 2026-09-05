@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Field, Input } from "@/components/ui/field";
 import { getSupabaseBrowserClient } from "@/lib/supabase/client";
 
-export function StudioLoginForm() {
+export function AdminLoginForm({ redirectTo = "/studio" }: { redirectTo?: string }) {
   const router = useRouter();
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -24,13 +24,25 @@ export function StudioLoginForm() {
       setLoading(false);
       return;
     }
-    const { error: authError } = await supabase.auth.signInWithPassword({ email: String(form.get("email")), password: String(form.get("password")) });
+    // signInWithPassword rejects outright on a network failure, so without this
+    // catch a dropped connection leaves the button spinning with no message.
+    let authError: unknown = null;
+    try {
+      ({ error: authError } = await supabase.auth.signInWithPassword({
+        email: String(form.get("email")),
+        password: String(form.get("password")),
+      }));
+    } catch {
+      setError("Could not reach the server. Check your connection and try again.");
+      setLoading(false);
+      return;
+    }
     if (authError) {
       setError("The email or password is not correct.");
       setLoading(false);
       return;
     }
-    router.replace("/studio");
+    router.replace(redirectTo);
     router.refresh();
   }
 
@@ -41,7 +53,7 @@ export function StudioLoginForm() {
       {error && <p role="alert" className="text-sm text-accent-deep">{error}</p>}
       <Button type="submit" size="lg" disabled={loading} className="w-full">
         {loading ? <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden="true" /> : <LockKeyhole className="h-4 w-4" aria-hidden="true" />}
-        {loading ? "Signing in" : "Sign in to Studio"}
+        {loading ? "Signing in" : "Sign in"}
       </Button>
     </form>
   );
