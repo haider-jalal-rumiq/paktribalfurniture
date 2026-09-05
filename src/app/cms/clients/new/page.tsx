@@ -5,7 +5,7 @@ export const metadata = { title: "New client" };
 
 export default function NewClientPage() {
   return (
-    <CmsPage eyebrow="Clients" title="New client">
+    <CmsPage backHref="/cms/clients" eyebrow="Clients" title="New client">
       <ClientForm />
     </CmsPage>
   );

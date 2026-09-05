@@ -1,4 +1,5 @@
-import { Container } from "@/components/layout/container";
+import Image from "next/image";
+
 import { AdminLoginForm } from "@/features/auth/admin-login-form";
 import { hasSupabaseEnv } from "@/lib/supabase/config";
 
@@ -13,24 +14,26 @@ export default async function CmsLoginPage({
   const configured = hasSupabaseEnv();
 
   return (
-    <div className="flex min-h-[100dvh] items-center py-16">
-      <Container className="max-w-md">
-        <div className="border border-hairline bg-surface p-7 sm:p-9">
-          <p className="text-xs font-bold uppercase tracking-[0.2em] text-accent">
-            Pak Tribal Furniture
-          </p>
-          <h1 className="mt-3 font-display text-4xl leading-none text-ink">Orders &amp; accounts</h1>
-          <p className="mt-3 text-sm leading-6 text-muted">
-            Sign in with the administrator account.
-          </p>
+    <div className="flex min-h-[100dvh] flex-col items-center justify-center bg-canvas px-4 py-10">
+      <div className="w-full max-w-sm">
+        <div className="flex flex-col items-center text-center">
+          <Image
+            src="/icons/icon-192.png"
+            alt=""
+            width={64}
+            height={64}
+            className="rounded-2xl shadow-[var(--shadow-card)]"
+            priority
+          />
+          <h1 className="mt-5 font-display text-4xl leading-none text-ink">PTF Orders</h1>
+          <p className="mt-2 text-sm text-muted">Clients, orders, payments and expenses.</p>
+        </div>
 
+        <div className="mt-7 rounded-[var(--radius-card)] border border-hairline bg-surface p-6 shadow-[var(--shadow-raised)]">
           {configured ? (
             <AdminLoginForm redirectTo="/cms" />
           ) : (
-            <p
-              role="alert"
-              className="mt-7 border border-accent/30 bg-accent/8 p-4 text-sm leading-6 text-accent-deep"
-            >
+            <p role="alert" className="text-sm leading-6 text-accent-deep">
               Supabase environment variables are not configured for this deployment. Follow the CMS
               setup checklist in README.md.
             </p>
@@ -42,7 +45,9 @@ export default async function CmsLoginPage({
             </p>
           )}
         </div>
-      </Container>
+
+        <p className="mt-6 text-center text-xs text-muted">Pak Tribal Furniture · Islamabad</p>
+      </div>
     </div>
   );
 }

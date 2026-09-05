@@ -4,10 +4,10 @@
  */
 
 export const clientTypes = [
-  { value: "individual", label: "Individual customer" },
-  { value: "showroom", label: "Showroom" },
-  { value: "factory", label: "Factory client" },
-  { value: "institution", label: "Institution" },
+  { value: "individual", label: "Individual customer", short: "Individual" },
+  { value: "showroom", label: "Showroom", short: "Showroom" },
+  { value: "factory", label: "Factory client", short: "Factory" },
+  { value: "institution", label: "Institution", short: "Institution" },
 ] as const;
 
 export const orderStatuses = [
@@ -52,6 +52,10 @@ const labelOf = (options: readonly Option[], value: string): string =>
   options.find((option) => option.value === value)?.label ?? value;
 
 export const clientTypeLabel = (value: string): string => labelOf(clientTypes, value);
+
+/** Badge-sized label — the full one crowds out the client's name on a phone. */
+export const clientTypeShort = (value: string): string =>
+  clientTypes.find((type) => type.value === value)?.short ?? value;
 export const orderStatusLabel = (value: string): string => labelOf(orderStatuses, value);
 export const paymentMethodLabel = (value: string): string => labelOf(paymentMethods, value);
 export const expenseCategoryLabel = (value: string): string => labelOf(expenseCategories, value);

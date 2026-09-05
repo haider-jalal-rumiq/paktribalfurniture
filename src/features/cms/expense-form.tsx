@@ -52,7 +52,7 @@ export function ExpenseForm({ openOrders }: { openOrders: { id: string; label: s
   }
 
   return (
-    <form ref={formRef} onSubmit={submit} className="border border-hairline bg-surface p-4 sm:p-5">
+    <form ref={formRef} onSubmit={submit} className="rounded-[var(--radius-card)] border border-hairline bg-surface p-4 shadow-[var(--shadow-card)] sm:p-5">
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
         <Field label="Amount (Rs)" htmlFor="amount" hint={parsed ? formatPkr(parsed) : undefined}>
           <Input
@@ -98,7 +98,7 @@ export function ExpenseForm({ openOrders }: { openOrders: { id: string; label: s
         </p>
       )}
 
-      <Button type="submit" className="mt-4" disabled={saving}>
+      <Button type="submit" size="lg" className="mt-4 w-full sm:w-auto" disabled={saving}>
         {saving ? (
           <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden="true" />
         ) : (
