@@ -1,8 +1,9 @@
 import Link from "next/link";
-import { Plus } from "lucide-react";
+import { ClipboardList, Plus } from "lucide-react";
 
 import { CmsPage } from "@/components/cms/cms-page";
 import { RecordList } from "@/components/cms/record-list";
+import { Badge, STATUS_TONE } from "@/components/ui/badge";
 import { ButtonLink } from "@/components/ui/button";
 import { orderStatusLabel, orderStatuses } from "@/content/cms";
 import { daysUntil, getOrders, orderBalance } from "@/lib/cms";
@@ -21,7 +22,10 @@ export default async function OrdersPage({
   const active = orderStatuses.some((option) => option.value === status) ? status : undefined;
   const orders = hasSupabaseEnv() ? await getOrders({ status: active }) : [];
 
-  const filters = [{ value: undefined, label: "All" }, ...orderStatuses.map((s) => ({ value: s.value as string | undefined, label: s.label }))];
+  const filters: { value?: string; label: string }[] = [
+    { value: undefined, label: "All" },
+    ...orderStatuses.map((s) => ({ value: s.value as string, label: s.label })),
+  ];
 
   return (
     <CmsPage
@@ -33,17 +37,21 @@ export default async function OrdersPage({
         </ButtonLink>
       }
     >
-      <nav aria-label="Filter by status" className="mt-5 flex flex-wrap gap-2">
+      {/* Scrolls sideways on a phone rather than wrapping into three ragged rows. */}
+      <nav
+        aria-label="Filter by status"
+        className="-mx-4 mb-5 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] sm:mx-0 sm:flex-wrap sm:px-0 [&::-webkit-scrollbar]:hidden"
+      >
         {filters.map((filter) => (
           <Link
             key={filter.label}
             href={filter.value ? `/cms/orders?status=${filter.value}` : "/cms/orders"}
             aria-current={active === filter.value ? "page" : undefined}
             className={cn(
-              "inline-flex min-h-9 items-center rounded-[var(--radius-ui)] border px-3 text-xs font-semibold transition-colors",
+              "inline-flex min-h-10 shrink-0 items-center rounded-[var(--radius-pill)] border px-4 text-sm font-semibold transition-colors",
               active === filter.value
                 ? "border-accent bg-accent text-white"
-                : "border-hairline bg-surface text-ink-soft hover:border-ink",
+                : "border-hairline bg-surface text-ink-soft hover:border-ink hover:text-ink",
             )}
           >
             {filter.label}
@@ -51,26 +59,40 @@ export default async function OrdersPage({
         ))}
       </nav>
 
-      <div className="mt-6">
-        <RecordList
-          empty={active ? "No orders with that status." : "No orders yet. Add the first one."}
-          rows={orders.map((order) => {
-            const { balance } = orderBalance(order);
-            const days = order.expected_date ? daysUntil(order.expected_date) : null;
-            return {
-              id: order.id,
-              href: `/cms/orders/${order.id}`,
-              title: `#${order.order_no} · ${order.title}`,
-              subtitle: [order.clients?.name, order.site_label].filter(Boolean).join(" · "),
-              meta: orderStatusLabel(order.status),
-              metaSub:
-                balance > 0
-                  ? `${formatPkr(balance)} due${days !== null && days < 0 ? ` · ${Math.abs(days)}d overdue` : ""}`
-                  : "Paid in full",
-            };
-          })}
-        />
-      </div>
+      <RecordList
+        emptyIcon={<ClipboardList className="h-8 w-8" aria-hidden="true" />}
+        empty={active ? "No orders with that status." : "No orders yet. Add the first one."}
+        rows={orders.map((order) => {
+          const { balance } = orderBalance(order);
+          const days = order.expected_date ? daysUntil(order.expected_date) : null;
+          const overdue =
+            days !== null && days < 0 && order.status !== "delivered" && order.status !== "cancelled";
+
+          return {
+            id: order.id,
+            href: `/cms/orders/${order.id}`,
+            title: order.title,
+            subtitle: (
+              <>
+                #{order.order_no}
+                {order.clients?.name ? ` · ${order.clients.name}` : ""}
+                {order.site_label ? ` · ${order.site_label}` : ""}
+              </>
+            ),
+            meta: (
+              <Badge tone={STATUS_TONE[order.status] ?? "neutral"}>
+                {orderStatusLabel(order.status)}
+              </Badge>
+            ),
+            metaSub: (
+              <span className={cn("tabular-nums", overdue && "font-semibold text-accent")}>
+                {balance > 0 ? `${formatPkr(balance)} due` : "Paid in full"}
+                {overdue ? ` · ${Math.abs(days)}d late` : ""}
+              </span>
+            ),
+          };
+        })}
+      />
     </CmsPage>
   );
 }

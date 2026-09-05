@@ -4,6 +4,7 @@ import { Check, LoaderCircle, Save, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+import { FormSection, StickyActions } from "@/components/cms/cms-page";
 import { Button } from "@/components/ui/button";
 import { Field, Input, Select, Textarea } from "@/components/ui/field";
 import { clientTypes } from "@/content/cms";
@@ -76,8 +77,8 @@ export function ClientForm({ client }: { client?: Client }) {
   }
 
   return (
-    <form onSubmit={submit} className="mt-6 space-y-6">
-      <div className="grid gap-5 sm:grid-cols-2">
+    <form onSubmit={submit} className="space-y-4">
+      <FormSection title="Client details">
         <Field label="Client name" htmlFor="name">
           <Input id="name" name="name" defaultValue={client?.name ?? ""} required autoComplete="off" />
         </Field>
@@ -99,16 +100,19 @@ export function ClientForm({ client }: { client?: Client }) {
         <Field label="Notes" htmlFor="notes" className="sm:col-span-2">
           <Textarea id="notes" name="notes" rows={4} defaultValue={client?.notes ?? ""} />
         </Field>
-      </div>
+      </FormSection>
 
       {error && (
-        <p role="alert" className="border border-accent/30 bg-accent/8 p-4 text-sm text-accent-deep">
+        <p
+          role="alert"
+          className="rounded-[var(--radius-card)] border border-accent/30 bg-accent/8 p-4 text-sm text-accent-deep"
+        >
           {error}
         </p>
       )}
 
-      <div className="flex flex-wrap items-center gap-3">
-        <Button type="submit" size="lg" disabled={saving || saved || deleting}>
+      <StickyActions>
+        <Button type="submit" size="lg" disabled={saving || saved || deleting} className="flex-1 sm:flex-none">
           {saved ? (
             <Check className="h-4 w-4" aria-hidden="true" />
           ) : saving ? (
@@ -128,7 +132,7 @@ export function ClientForm({ client }: { client?: Client }) {
             {deleting ? "Deleting" : "Delete"}
           </Button>
         )}
-      </div>
+      </StickyActions>
     </form>
   );
 }

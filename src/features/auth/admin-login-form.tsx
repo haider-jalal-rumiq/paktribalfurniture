@@ -47,7 +47,7 @@ export function AdminLoginForm({ redirectTo = "/studio" }: { redirectTo?: string
   }
 
   return (
-    <form onSubmit={submit} className="mt-8 space-y-5">
+    <form onSubmit={submit} className="space-y-4">
       <Field label="Email" htmlFor="email"><Input id="email" name="email" type="email" autoComplete="email" required /></Field>
       <Field label="Password" htmlFor="password"><Input id="password" name="password" type="password" autoComplete="current-password" required /></Field>
       {error && <p role="alert" className="text-sm text-accent-deep">{error}</p>}

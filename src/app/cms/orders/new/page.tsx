@@ -16,7 +16,7 @@ export default async function NewOrderPage({
   ]);
 
   return (
-    <CmsPage eyebrow="Orders" title="New order">
+    <CmsPage backHref="/cms/orders" eyebrow="Orders" title="New order">
       <OrderForm clients={clients} defaultClientId={client} />
     </CmsPage>
   );

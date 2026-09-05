@@ -5,6 +5,7 @@ import { Check, LoaderCircle, Save, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+import { FormSection, StickyActions } from "@/components/cms/cms-page";
 import { Button } from "@/components/ui/button";
 import { Field, Input, Select, Textarea } from "@/components/ui/field";
 import { orderStatuses } from "@/content/cms";
@@ -80,17 +81,22 @@ export function OrderForm({
 
   if (!clients.length) {
     return (
-      <div className="mt-6 border border-accent/30 bg-accent/8 p-5 text-sm leading-6 text-ink-soft">
+      <div className="rounded-[var(--radius-card)] border border-accent/30 bg-accent/8 p-5 text-sm leading-6 text-ink-soft">
         Add a client first — every order belongs to one.
       </div>
     );
   }
 
   return (
-    <form onSubmit={submit} className="mt-6 space-y-6">
-      <div className="grid gap-5 sm:grid-cols-2">
+    <form onSubmit={submit} className="space-y-4">
+      <FormSection title="Who and what">
         <Field label="Client" htmlFor="clientId">
-          <Select id="clientId" name="clientId" defaultValue={order?.client_id ?? defaultClientId ?? ""} required>
+          <Select
+            id="clientId"
+            name="clientId"
+            defaultValue={order?.client_id ?? defaultClientId ?? ""}
+            required
+          >
             <option value="" disabled>
               Choose a client
             </option>
@@ -117,9 +123,11 @@ export function OrderForm({
         </Field>
 
         <Field label="Details" htmlFor="description" className="sm:col-span-2">
-          <Textarea id="description" name="description" rows={4} defaultValue={order?.description ?? ""} />
+          <Textarea id="description" name="description" rows={3} defaultValue={order?.description ?? ""} />
         </Field>
+      </FormSection>
 
+      <FormSection title="Money and timing">
         <Field
           label="Order total (Rs)"
           htmlFor="totalAmount"
@@ -159,7 +167,9 @@ export function OrderForm({
         <Field label="Expected delivery" htmlFor="expectedDate" hint="Drives the reminder two days before">
           <Input id="expectedDate" name="expectedDate" type="date" defaultValue={order?.expected_date ?? ""} />
         </Field>
+      </FormSection>
 
+      <FormSection title="Delivery">
         <Field label="Delivery address" htmlFor="deliveryAddress" className="sm:col-span-2">
           <Textarea
             id="deliveryAddress"
@@ -179,52 +189,68 @@ export function OrderForm({
           />
         </Field>
 
-        <Field label="Photos" htmlFor="images" hint="JPEG, PNG, WebP or AVIF. Up to 6 files, 8 MB each.">
+        <Field label="Notes" htmlFor="notes">
+          <Input id="notes" name="notes" defaultValue={order?.notes ?? ""} />
+        </Field>
+      </FormSection>
+
+      <FormSection title="Photos" hint="JPEG, PNG, WebP or AVIF. Up to 6 files, 8 MB each.">
+        <Field label="Add photos" htmlFor="images" className="sm:col-span-2">
           <Input
             id="images"
             name="images"
             type="file"
             accept="image/jpeg,image/png,image/webp,image/avif"
             multiple
+            className="file:mr-3 file:rounded-[var(--radius-ui)] file:border-0 file:bg-wash file:px-3 file:py-1.5 file:text-sm file:font-semibold file:text-ink-soft"
           />
         </Field>
 
-        <Field label="Notes" htmlFor="notes" className="sm:col-span-2">
-          <Textarea id="notes" name="notes" rows={3} defaultValue={order?.notes ?? ""} />
-        </Field>
-      </div>
-
-      {photos.length > 0 && (
-        <fieldset>
-          <legend className="text-sm font-semibold text-ink-soft">Current photos</legend>
-          <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
-            {photos.map((photo) => (
-              <label key={photo.path} className="relative aspect-square overflow-hidden bg-canvas-deep">
-                <Image src={photo.url} alt="" fill sizes="(min-width: 640px) 25vw, 50vw" className="object-cover" unoptimized />
-                <span className="absolute inset-x-2 bottom-2 flex items-center gap-2 bg-surface/92 p-2 text-xs font-semibold text-ink">
-                  <input
-                    type="checkbox"
-                    name="existingImagePaths"
-                    value={photo.path}
-                    defaultChecked
-                    className="accent-accent"
+        {photos.length > 0 && (
+          <div className="sm:col-span-2">
+            <p className="text-sm font-semibold text-ink-soft">Current photos</p>
+            <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+              {photos.map((photo) => (
+                <label
+                  key={photo.path}
+                  className="relative aspect-square cursor-pointer overflow-hidden rounded-[var(--radius-ui)] bg-canvas-deep"
+                >
+                  <Image
+                    src={photo.url}
+                    alt=""
+                    fill
+                    sizes="(min-width: 640px) 25vw, 50vw"
+                    className="object-cover"
+                    unoptimized
                   />
-                  Keep
-                </span>
-              </label>
-            ))}
+                  <span className="absolute inset-x-1.5 bottom-1.5 flex items-center gap-2 rounded-[var(--radius-ui)] bg-surface/92 px-2 py-1.5 text-xs font-semibold text-ink">
+                    <input
+                      type="checkbox"
+                      name="existingImagePaths"
+                      value={photo.path}
+                      defaultChecked
+                      className="accent-accent"
+                    />
+                    Keep
+                  </span>
+                </label>
+              ))}
+            </div>
           </div>
-        </fieldset>
-      )}
+        )}
+      </FormSection>
 
       {error && (
-        <p role="alert" className="border border-accent/30 bg-accent/8 p-4 text-sm text-accent-deep">
+        <p
+          role="alert"
+          className="rounded-[var(--radius-card)] border border-accent/30 bg-accent/8 p-4 text-sm text-accent-deep"
+        >
           {error}
         </p>
       )}
 
-      <div className="flex flex-wrap items-center gap-3">
-        <Button type="submit" size="lg" disabled={saving || saved || deleting}>
+      <StickyActions>
+        <Button type="submit" size="lg" disabled={saving || saved || deleting} className="flex-1 sm:flex-none">
           {saved ? (
             <Check className="h-4 w-4" aria-hidden="true" />
           ) : saving ? (
@@ -235,7 +261,13 @@ export function OrderForm({
           {saved ? "Saved — opening" : saving ? "Saving" : "Save order"}
         </Button>
         {order && (
-          <Button type="button" variant="outline" size="lg" onClick={remove} disabled={saving || deleting}>
+          <Button
+            type="button"
+            variant="outline"
+            size="lg"
+            onClick={remove}
+            disabled={saving || deleting}
+          >
             {deleting ? (
               <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden="true" />
             ) : (
@@ -244,7 +276,7 @@ export function OrderForm({
             {deleting ? "Deleting" : "Delete"}
           </Button>
         )}
-      </div>
+      </StickyActions>
     </form>
   );
 }
