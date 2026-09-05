@@ -1,0 +1,250 @@
+"use client";
+
+import Image from "next/image";
+import { Check, LoaderCircle, Save, Trash2 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+
+import { Button } from "@/components/ui/button";
+import { Field, Input, Select, Textarea } from "@/components/ui/field";
+import { orderStatuses } from "@/content/cms";
+import { today } from "@/lib/cms-core";
+import { formatPkr, parseAmount } from "@/lib/money";
+import { submitRequest } from "@/lib/submit";
+import type { Client, Order } from "@/types/database";
+
+export function OrderForm({
+  order,
+  clients,
+  photos = [],
+  defaultClientId,
+}: {
+  order?: Order;
+  clients: Pick<Client, "id" | "name" | "type">[];
+  photos?: { path: string; url: string }[];
+  defaultClientId?: string;
+}) {
+  const router = useRouter();
+  const [total, setTotal] = useState(order ? String(order.total_amount) : "");
+  const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  const parsedTotal = parseAmount(total);
+
+  async function submit(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    setSaving(true);
+    setError("");
+
+    const result = await submitRequest(
+      order ? `/api/cms/orders/${order.id}` : "/api/cms/orders",
+      { method: order ? "PUT" : "POST", body: new FormData(event.currentTarget) },
+      "The order could not be saved.",
+    );
+
+    if (!result.ok || !result.id) {
+      setError(result.message || "The order could not be saved.");
+      setSaving(false);
+      return;
+    }
+
+    // Confirm the save before navigating. Opening the order page can be slow,
+    // and a spinner that never resolves reads as "it failed" — which is how the
+    // same order ends up entered twice.
+    setSaved(true);
+    router.push(`/cms/orders/${result.id}`);
+    router.refresh();
+  }
+
+  async function remove() {
+    if (!order || !window.confirm(`Delete order #${order.order_no}? This cannot be undone.`)) return;
+    setDeleting(true);
+    setError("");
+
+    const result = await submitRequest(
+      `/api/cms/orders/${order.id}`,
+      { method: "DELETE" },
+      "The order could not be deleted.",
+    );
+    if (!result.ok) {
+      setError(result.message);
+      setDeleting(false);
+      return;
+    }
+
+    router.push("/cms/orders");
+    router.refresh();
+  }
+
+  if (!clients.length) {
+    return (
+      <div className="mt-6 border border-accent/30 bg-accent/8 p-5 text-sm leading-6 text-ink-soft">
+        Add a client first — every order belongs to one.
+      </div>
+    );
+  }
+
+  return (
+    <form onSubmit={submit} className="mt-6 space-y-6">
+      <div className="grid gap-5 sm:grid-cols-2">
+        <Field label="Client" htmlFor="clientId">
+          <Select id="clientId" name="clientId" defaultValue={order?.client_id ?? defaultClientId ?? ""} required>
+            <option value="" disabled>
+              Choose a client
+            </option>
+            {clients.map((client) => (
+              <option key={client.id} value={client.id}>
+                {client.name}
+              </option>
+            ))}
+          </Select>
+        </Field>
+
+        <Field label="Site or branch" htmlFor="siteLabel" hint="For example F-8, PWD, or a showroom floor">
+          <Input id="siteLabel" name="siteLabel" defaultValue={order?.site_label ?? ""} />
+        </Field>
+
+        <Field label="What is being made" htmlFor="title" className="sm:col-span-2">
+          <Input
+            id="title"
+            name="title"
+            defaultValue={order?.title ?? ""}
+            placeholder="6 dining chairs, rosewood"
+            required
+          />
+        </Field>
+
+        <Field label="Details" htmlFor="description" className="sm:col-span-2">
+          <Textarea id="description" name="description" rows={4} defaultValue={order?.description ?? ""} />
+        </Field>
+
+        <Field
+          label="Order total (Rs)"
+          htmlFor="totalAmount"
+          hint={parsedTotal !== null && parsedTotal > 0 ? formatPkr(parsedTotal) : "Whole rupees"}
+        >
+          <Input
+            id="totalAmount"
+            name="totalAmount"
+            inputMode="numeric"
+            value={total}
+            onChange={(event) => setTotal(event.target.value)}
+            placeholder="250000"
+            required
+          />
+        </Field>
+
+        <Field label="Status" htmlFor="status">
+          <Select id="status" name="status" defaultValue={order?.status ?? "pending"} required>
+            {orderStatuses.map((status) => (
+              <option key={status.value} value={status.value}>
+                {status.label}
+              </option>
+            ))}
+          </Select>
+        </Field>
+
+        <Field label="Order date" htmlFor="orderDate">
+          <Input
+            id="orderDate"
+            name="orderDate"
+            type="date"
+            defaultValue={order?.order_date ?? today()}
+            required
+          />
+        </Field>
+
+        <Field label="Expected delivery" htmlFor="expectedDate" hint="Drives the reminder two days before">
+          <Input id="expectedDate" name="expectedDate" type="date" defaultValue={order?.expected_date ?? ""} />
+        </Field>
+
+        <Field label="Delivery address" htmlFor="deliveryAddress" className="sm:col-span-2">
+          <Textarea
+            id="deliveryAddress"
+            name="deliveryAddress"
+            rows={2}
+            defaultValue={order?.delivery_address ?? ""}
+          />
+        </Field>
+
+        <Field label="Contact phone" htmlFor="contactPhone" hint="If different from the client's number">
+          <Input
+            id="contactPhone"
+            name="contactPhone"
+            type="tel"
+            inputMode="tel"
+            defaultValue={order?.contact_phone ?? ""}
+          />
+        </Field>
+
+        <Field label="Photos" htmlFor="images" hint="JPEG, PNG, WebP or AVIF. Up to 6 files, 8 MB each.">
+          <Input
+            id="images"
+            name="images"
+            type="file"
+            accept="image/jpeg,image/png,image/webp,image/avif"
+            multiple
+          />
+        </Field>
+
+        <Field label="Notes" htmlFor="notes" className="sm:col-span-2">
+          <Textarea id="notes" name="notes" rows={3} defaultValue={order?.notes ?? ""} />
+        </Field>
+      </div>
+
+      {photos.length > 0 && (
+        <fieldset>
+          <legend className="text-sm font-semibold text-ink-soft">Current photos</legend>
+          <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+            {photos.map((photo) => (
+              <label key={photo.path} className="relative aspect-square overflow-hidden bg-canvas-deep">
+                <Image src={photo.url} alt="" fill sizes="(min-width: 640px) 25vw, 50vw" className="object-cover" unoptimized />
+                <span className="absolute inset-x-2 bottom-2 flex items-center gap-2 bg-surface/92 p-2 text-xs font-semibold text-ink">
+                  <input
+                    type="checkbox"
+                    name="existingImagePaths"
+                    value={photo.path}
+                    defaultChecked
+                    className="accent-accent"
+                  />
+                  Keep
+                </span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
+      )}
+
+      {error && (
+        <p role="alert" className="border border-accent/30 bg-accent/8 p-4 text-sm text-accent-deep">
+          {error}
+        </p>
+      )}
+
+      <div className="flex flex-wrap items-center gap-3">
+        <Button type="submit" size="lg" disabled={saving || saved || deleting}>
+          {saved ? (
+            <Check className="h-4 w-4" aria-hidden="true" />
+          ) : saving ? (
+            <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden="true" />
+          ) : (
+            <Save className="h-4 w-4" aria-hidden="true" />
+          )}
+          {saved ? "Saved — opening" : saving ? "Saving" : "Save order"}
+        </Button>
+        {order && (
+          <Button type="button" variant="outline" size="lg" onClick={remove} disabled={saving || deleting}>
+            {deleting ? (
+              <LoaderCircle className="h-4 w-4 animate-spin" aria-hidden="true" />
+            ) : (
+              <Trash2 className="h-4 w-4" aria-hidden="true" />
+            )}
+            {deleting ? "Deleting" : "Delete"}
+          </Button>
+        )}
+      </div>
+    </form>
+  );
+}

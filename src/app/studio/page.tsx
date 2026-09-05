@@ -3,7 +3,7 @@ import { ArrowUpRight, Plus } from "lucide-react";
 
 import { Container } from "@/components/layout/container";
 import { ButtonLink } from "@/components/ui/button";
-import { StudioSignOut } from "@/features/studio/studio-sign-out";
+import { AdminSignOut } from "@/features/auth/admin-sign-out";
 import { getStudioInquiries, getStudioProducts } from "@/lib/catalog";
 import { hasSupabaseEnv } from "@/lib/supabase/config";
 
@@ -17,7 +17,7 @@ export default async function StudioPage() {
       <Container>
         <div className="flex flex-col gap-5 border-b border-hairline pb-8 sm:flex-row sm:items-end sm:justify-between">
           <div><p className="text-xs font-bold uppercase tracking-[0.2em] text-accent">Private catalogue tools</p><h1 className="mt-3 font-display text-5xl leading-none text-ink sm:text-6xl">PTF Studio</h1></div>
-          <div className="flex flex-wrap items-center gap-5"><StudioSignOut /><ButtonLink href="/studio/products/new"><Plus className="h-4 w-4" aria-hidden="true" />Add product</ButtonLink></div>
+          <div className="flex flex-wrap items-center gap-5"><AdminSignOut redirectTo="/studio/login" /><ButtonLink href="/studio/products/new"><Plus className="h-4 w-4" aria-hidden="true" />Add product</ButtonLink></div>
         </div>
 
         {!configured && <section className="mt-10 border border-accent/30 bg-accent/8 p-6"><h2 className="font-display text-3xl text-ink">Connect Supabase to begin</h2><p className="mt-3 max-w-2xl text-sm leading-6 text-ink-soft">Apply the included database schema, add the environment variables, and assign the admin role to your Supabase Auth user. The full checklist is in README.md.</p></section>}

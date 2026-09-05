@@ -8,97 +8,92 @@ This block is written and re-added by `next dev` — verify at `node_modules/nex
 
 <!-- END:nextjs-agent-rules -->
 
-# Sundance Optical
+# Pak Tribal Furniture
 
-> Marketing site for a real optician in Phoenix, Arizona.
-> Next.js 16 (App Router) · React 19 · TypeScript strict · Tailwind v4 · Motion
+> Marketing catalogue **and** the business's own order system, for a solid-wood
+> furniture maker in Islamabad, Pakistan.
+> Next.js 16 (App Router) · React 19 · TypeScript strict · Tailwind v4 · Motion · Supabase
 
-This replaced a ~96 KB spec written for an unrelated project. It is deliberately
-short: every kilobyte here is re-read on every request, so it holds only what
-changes a decision.
+Everything here is meant to change a decision. If a line stops doing that,
+delete it.
 
 ---
 
-## What this is
+## Three apps, one codebase
 
-A rebuild of `sundanceoptical.com`, currently a fixed-width WordPress site with
-no mobile layout, no hours, no map, no imagery, and no way to make contact
-except a phone number in the footer.
+| | Route | Who | What |
+|---|---|---|---|
+| **Site** | `/`, `/collections`, `/custom`, `/contact`, `/privacy` | public | catalogue + WhatsApp enquiry handoff |
+| **Studio** | `/studio` | admin | the product catalogue |
+| **CMS** | `/cms` | admin | clients, orders, payments, workshop expenses |
 
-The rebuild exists to **convert**. Its three real differentiators — all buried
-as plain text on the old site — lead here instead:
+Both admin areas use the **same** Supabase email+password login and the same
+claim: `app_metadata.role === "admin"`. `src/lib/supabase/proxy.ts` holds one
+`PROTECTED_AREAS` list — add an area there and to the matcher in
+`src/proxy.ts`, never a new branch.
 
-1. Veteran owned — Philip K. Clark, retired Navy Chief Petty Officer.
-2. A Phoenix family in eye care since 1951.
-3. Native Visions Eyewear — frames by Native American artists, exclusive locally.
-
-**Status: pitch build.** Frontend only, no database. It is shown to the owner to
-win the work. Do not add backend infrastructure without being asked.
+**Next 16 renamed middleware.** The file is `src/proxy.ts` exporting `proxy()`.
+There is no `middleware.ts`.
 
 ### Business facts
 
-Everything lives in `src/content/site.ts`. **Never hardcode a phone number,
-address, or opening hour anywhere else** — that file is the single source, and
-the JSON-LD is generated from it.
+`src/content/site.ts` — name, WhatsApp number, Instagram.
+`src/content/catalog.ts` — the eight categories.
+`src/content/cms.ts` — client types, order statuses, payment methods, expense
+categories.
 
-| | |
-|---|---|
-| Address | 4201 N 16th St, Suite 160, Phoenix, AZ 85016 |
-| Phone / email | (602) 277-5007 · sundanceoptical@gmail.com |
-| Hours | Mon–Fri 8:00 AM – 5:00 PM (Arizona; no DST) |
-| Coverage | Any doctor's Rx · AHCCCS/AIHP for Native patients under 21 · veteran discounts |
-| Landmarks | Opposite Phoenix Indian Medical Center; ~1 mi from the Carl T. Hayden VA |
+**Never hardcode a phone number or a category anywhere else.** The zod schemas,
+the `<select>` options and the SQL CHECK constraints all derive from these three
+files. Changing a CMS list means editing `src/content/cms.ts` *and* the matching
+CHECK in `supabase/cms-schema.sql`.
 
 ---
 
 ## Working agreements
 
-- **Verify, don't assume.** Run `npm run verify` before claiming anything works,
-  and report the real numbers.
-- **No invented business facts.** If a claim about the shop is not in `site.ts`
-  or on the current site, ask. Do not write plausible-sounding copy about
-  services, warranties, brands, or pricing.
-- **No fabricated reviews or people.** `reviews` holds real, attributed quotes
-  only. Never generate a synthetic portrait of Philip Clark — a real, named
-  person. The About page uses a credential card until a real photo exists.
-- **Ask before scope grows.** Backend, CMS, e-commerce, and online booking are
-  explicitly out of scope for the pitch.
+- **Verify, don't assume.** `npm run lint && npm run typecheck && npm run build`
+  before claiming anything works, and report the real numbers.
+- **No invented business facts.** If a claim about the business is not in
+  `content/`, ask. Do not write plausible-sounding copy about services,
+  warranties, brands, or pricing.
+- **Graceful degradation is load-bearing.** Every Supabase call returns
+  `null`/`[]` when the env vars are absent, so the public site builds and runs
+  with no database. Any new reader must do the same.
+- **Ask before scope grows.** E-commerce, online payment, and multi-user roles
+  are out of scope.
 
 ---
 
 ## Design system
 
 Tokens live in `src/app/globals.css` under `@theme`. **Use the token, never a
-raw hex.**
+raw hex.** There is no `sage`, `clay`, or `ember` — those were a different
+project.
 
 ```
---color-ink         #1A1512   body text, dark bands
---color-ink-soft    #3B322C   secondary text
---color-canvas      #FAF6F0   page background
---color-canvas-deep #F1E9DD   alternating section background
---color-surface     #FFFFFF   cards
---color-clay        #B4552D   primary CTA, links, brand
---color-clay-deep   #8F4123   hover, error text
---color-ember       #E08C3E   accents, focus ring, dark-band highlight
---color-sage        #4A5D4E   trust / veteran cues
---color-stone       #8C8073   muted text — large text and borders ONLY (3.4:1)
---color-hairline    #E2D7C8   borders
+--color-canvas      #f3f4ef   page background
+--color-canvas-deep #e6e9e1   alternating band
+--color-surface     #fbfcf8   cards
+--color-ink         #14201c   body text
+--color-ink-soft    #31423b   secondary text
+--color-muted       #66746e   muted text
+--color-accent      #963b36   CTA, links, anything urgent
+--color-accent-deep #722b28   hover, error text
+--color-hairline    #cbd2c8   borders
+--color-wash        #dce3da   hover fill
 ```
 
-Body copy is `ink` or `ink-soft` on `canvas`. `stone` never carries body text.
+**Type**: Cormorant Garamond (display, `font-display`) + Manrope (body). Fluid
+`clamp()` scale, `--text-xs` … `--text-5xl`. One `<h1>` per page.
 
-**Type**: Fraunces (display, `font-display`) + Inter (body). Fluid `clamp()`
-scale, `--text-xs` … `--text-5xl`. One `<h1>` per page, no skipped levels.
+**Dark mode is media-query only** — `@media (prefers-color-scheme: dark)`
+overriding `:root`. No `.dark` class, no toggle.
 
-**Motion**: everything routes through `src/components/motion/` — `Reveal`,
-`Stagger`/`StaggerItem`, `Parallax`, `CountUp`, `DrawLine`. Do not hand-roll a
-one-off animation; reuse or extend that module. Standard easing is
-`--ease-out-soft`; reveals are `once: true`.
-
-`prefers-reduced-motion` is a hard requirement. `useReducedMotionSafe()` gates
-the JS variants; the CSS block in `globals.css` neutralises keyframes. Any new
-animation must be inert under reduced motion, and the reduced-motion checks in
-`scripts/verify.mjs` must still pass.
+**Motion**: everything routes through `src/components/motion/index.tsx` —
+`Reveal`, `MaskReveal`, `Stagger`/`StaggerItem`, `TileReveal`, `PanelReveal`,
+`ScrollRail`, `Parallax`. Do not hand-roll a one-off animation.
+`prefers-reduced-motion` is a hard requirement: `useReducedMotionSafe()` gates
+the JS variants and the CSS block in `globals.css` neutralises keyframes.
 
 ---
 
@@ -107,53 +102,74 @@ animation must be inert under reduced motion, and the reduced-motion checks in
 ```
 src/
   app/           routes only — no business logic
+    cms/         the order system (admin)
+    studio/      the product catalogue (admin)
+    api/cms/*    CMS writes, each guarded by getCmsSession()
+    api/cron/*   scheduled jobs, guarded by CRON_SECRET — the ONLY
+                 place allowed to import lib/supabase/admin.ts
   components/
-    ui/          button, field, badge — generic, no business logic
-    layout/      header, mobile-nav, footer, container, page-hero, logo
+    ui/          button, field — generic, hand-written, no shadcn CLI
+    layout/      header, footer, container, chrome-gate, logo, nav
+    cms/         cms-page, cms-nav, record-list, stat-card
     motion/      the shared animation primitives
-    home/        home page sections (each used once)
   features/
-    eyewear/     frames data, card, silhouette placeholder, filters
-    appointment/ zod schema + form
-    hours/       open/closed logic, table, live status pill
-  content/site.ts   business facts — the single source of truth
-  lib/           utils (cn, formatMinutes), seo (metadata + JSON-LD)
+    auth/        admin login + sign out, shared by /studio and /cms
+    cms/         zod schemas + forms for client, order, payment, expense
+    inquiry/     public enquiry form (WhatsApp handoff, not booking)
+    studio/      product editor
+  content/       site.ts · catalog.ts · cms.ts — the sources of truth
+  lib/
+    cms-core.ts  pure logic: balances, PK dates, month ranges (no Supabase)
+    cms.ts       "server-only" reads; re-exports cms-core
+    money.ts     whole-rupee formatting and parsing
+    supabase/    client · server · proxy · admin (service role, cron only)
 ```
 
-**Deliberate deviations, recorded so they read as decisions rather than drift:**
+**Rules that matter:**
 
-- No `services/` or repository layer. There is no database; a service wrapping a
-  static array would be an abstraction with one implementation. When a backend
-  lands it slots into `features/*`.
-- No `store/`. Nothing needs global client state.
-- No shadcn CLI. The primitives in `components/ui/` are hand-written; the only
-  Radix dependency is `react-dialog`, used for the mobile menu because focus
-  trapping and scroll locking are worth not reimplementing.
-- Native `<select>` over a custom listbox — accessible and correct on mobile for
-  free.
+- Server Components by default. `"use client"` only for interaction; keep the
+  boundary small.
+- Filter and pagination state belongs in `searchParams`.
+- **Money is `bigint` whole rupees.** Never float, never `numeric`. Parse user
+  input with `parseAmount()` — it rejects rather than coerces.
+- **Balances are derived, never stored.** `order_payments` rows are the record;
+  `orderBalance()` computes the rest.
+- **"Today" means today in Pakistan.** Use `today()` from `lib/cms-core.ts`, not
+  `new Date()` — the server runs in UTC and would roll the date at 5am PKT.
+- Anything on a *public* page derived from "now" must be read on the client;
+  public pages are static. CMS pages are `force-dynamic`, so server-side is fine
+  there.
+- Validation schemas are shared between client and server — one zod schema
+  imported by both, so they cannot drift.
+- Errors: log detail server-side with `{ code, message }`, return a friendly
+  message. Never leak a stack, a schema name, or an internal path.
 
-**Rules that do matter here:**
+### Deliberate deviations, recorded so they read as decisions
 
-- Server Components by default. `"use client"` only for interaction, and keep
-  the boundary small — `FrameFilters` is client, the grid around it is not.
-- Filter and pagination state belongs in `searchParams`, so a filtered view is
-  shareable and indexable.
-- Anything derived from "now" must be read on the client via `useZonedClock()`.
-  Pages are static; a server-computed "today" freezes at build time.
+- No `services/` or repository layer, no `store/`. Nothing needs either yet.
+- Radix is used for exactly one thing: `react-dialog` in the mobile nav.
+- Native `<select>` over a custom listbox — correct on mobile for free.
+- The CMS uses plain `FormData` submits, not react-hook-form. The public
+  enquiry form uses react-hook-form. Both validate with the same shared schema;
+  don't unify them for its own sake.
+- `record-list.tsx` renders stacked cards, not a table. The CMS is read on a
+  phone; a horizontally scrolling table is unusable there.
 
 ---
 
-## Conventions
+## Security
 
-- TypeScript strict. No `any`. Explicit return types on exported functions.
-- Components PascalCase, files kebab-case, hooks `use*`.
-- Comments explain **why**, never what. Delete a comment that restates the code.
-- Every form field: real `<label>`, `aria-invalid`, `aria-describedby` wired to
-  its error, and focus moves to the first invalid field on submit.
-- Validation schemas are shared between client and server — one Zod schema
-  imported by both, so they cannot drift.
-- Errors: log detail server-side, return a friendly message with the phone
-  number. Never leak a stack, a schema name, or an internal path.
+- `app_metadata.role` is the **only** trusted authorization source. Never read a
+  role from user-editable metadata.
+- Every CMS table is admin-only under RLS. Nothing is readable by `anon`.
+- `order-images` and `backups` are **private** buckets — order photos are
+  customer documents. Pages render short-lived signed URLs.
+  `product-images` stays public; it is the catalogue.
+- `SUPABASE_SERVICE_ROLE_KEY` bypasses RLS. It is read by
+  `src/lib/supabase/admin.ts` alone, imported only by `src/app/api/cron/*`, and
+  never prefixed `NEXT_PUBLIC_`. `grep -r SERVICE_ROLE src/` must match one file.
+- `public/sw.js` has **no fetch handler** on purpose. Caching an authenticated
+  CMS serves stale orders and cached auth pages.
 
 ---
 
@@ -162,37 +178,23 @@ src/
 ```bash
 npm run dev        # dev server
 npm run build      # production build (must pass)
-npm run lint       # eslint (must pass — fix causes, do not suppress)
+npm run lint       # eslint (fix causes, do not suppress)
 npm run typecheck  # tsc --noEmit
-npm run verify     # Playwright: screenshots, a11y, form, filters, SEO, reduced motion
-npm run check:hours
+npm run check:cms  # assert-based self-check for money, balance, date logic
+npm run verify     # Playwright: screenshots, a11y, form, SEO, reduced motion
 ```
 
-`npm run verify` writes PNGs and `report.txt` to `.verify/`. **Look at the
-screenshots** — a passing assertion count does not mean the page looks right.
-
-### Local environment note
-
-This project is developed at `C:\dev\sundance-optical` and mirrored to
-`G:\My Drive\sundance-optical`. Google Drive is not an NTFS volume, so
-`node_modules` cannot be junctioned there and npm installs against it take 30+
-minutes. Work on the local copy; sync source only — never `node_modules` or
-`.next`.
+`npm run verify` writes PNGs and `report.txt` to `.verify/`, and defaults to
+port **3140** — `.claude/launch.json` runs the dev server on 3000, so pass the
+URL: `npm run verify http://localhost:3000`. **Look at the screenshots** — a
+passing assertion count does not mean the page looks right.
 
 ---
 
 ## Placeholders to replace before launch
 
-Search for `placeholder:` and `TODO`.
-
-- `public/images/*.png` — four AI-generated scene images standing in for real
-  shop photography.
-- Frame catalogue in `features/eyewear/frames.ts` — invented names and
-  descriptions. Each card draws a shape silhouette because no frame has a photo;
-  set `image` on a frame and the card uses it automatically.
-- About page credential card — awaiting a real headshot.
-- `site.url`, and `geo` coordinates (approximate; refine from the Google
-  Business Profile).
-- `api/appointments/route.ts` logs instead of emailing. Resend drops in at the
-  marked TODO. Its in-memory rate limit is per-instance — move to a shared store
-  if the site ever runs multiple instances.
+- `public/images/furniture/*.jpg` — placeholder photography.
+- `public/images/hero-shop.png` — 3.8 MB and unreferenced; delete it.
+- `site.url` — set `NEXT_PUBLIC_SITE_URL` for production.
+- Supabase point-in-time recovery is a paid feature and is **off**. The weekly
+  export protects against bad edits, not against losing the project.
