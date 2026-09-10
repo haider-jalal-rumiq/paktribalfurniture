@@ -6,7 +6,7 @@ import { addDays, monthRange, today } from "@/lib/cms-core";
 import { readAll } from "@/lib/cms-read";
 import { availableCredit } from "@/lib/accounting-core";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import type { Client, Database, Expense, Order, Invoice, BalanceEntry, LabourEntry } from "@/types/database";
+import type { Client, Database, Expense, Order, Invoice, BalanceEntry, LabourEntry, ShopSale, ShopInvoice } from "@/types/database";
 
 export async function getCmsSession(): Promise<{ supabase: SupabaseClient<Database>; userId: string } | null> {
   const supabase = await createSupabaseServerClient();
@@ -115,6 +115,29 @@ export async function getLabourEntry(id: string): Promise<LabourEntry | null> {
   if (!supabase) return null;
   const { data, error } = await supabase.from("labour_entries").select("*").eq("id", id).maybeSingle();
   if (error) { console.error("Could not load labour entry", { code: error.code, message: error.message }); return null; }
+  return data;
+}
+
+/** The whole shop ledger. Newest first; the printed serial is sale_no, not the row index. */
+export async function getShopSales(): Promise<ShopSale[]> {
+  const supabase = await createSupabaseServerClient();
+  if (!supabase) return [];
+  return await readAll((from, to) => supabase.from("shop_sales").select("*")
+    .order("sold_on", { ascending: false }).order("sale_no", { ascending: false }).range(from, to)) ?? [];
+}
+
+export async function getShopInvoices(): Promise<ShopInvoice[]> {
+  const supabase = await createSupabaseServerClient();
+  if (!supabase) return [];
+  return await readAll((from, to) => supabase.from("shop_invoices").select("*")
+    .order("issued_on", { ascending: false }).order("invoice_no", { ascending: false }).range(from, to)) ?? [];
+}
+
+export async function getShopInvoice(id: string): Promise<ShopInvoice | null> {
+  const supabase = await createSupabaseServerClient();
+  if (!supabase) return null;
+  const { data, error } = await supabase.from("shop_invoices").select("*").eq("id", id).maybeSingle();
+  if (error) { console.error("Could not load shop invoice", { code: error.code, message: error.message }); return null; }
   return data;
 }
 
