@@ -32,9 +32,9 @@ export function InvoiceForm({ invoice, clients, defaultClientId }: { invoice?: I
       method: invoice ? "PUT" : "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(parsed.data),
     });
     if (!result.ok || !result.id) { setError(result.message || "The invoice could not be saved."); setSaving(false); return; }
-    setSaved(true); router.push(`/cms/invoices/${result.id}`); router.refresh();
+    setSaved(true); router.push(`/factory/invoices/${result.id}`); router.refresh();
   }
-  if (!clients.length) return <p className="text-sm text-muted">Add a client before creating an invoice. <Link className="font-semibold text-accent" href="/cms/clients/new">Add client</Link></p>;
+  if (!clients.length) return <p className="text-sm text-muted">Add a client before creating an invoice. <Link className="font-semibold text-accent" href="/factory/clients/new">Add client</Link></p>;
   return <form onSubmit={submit} className="space-y-4">
     <FormSection title="Invoice details">
       <Field label="Client" htmlFor="invoiceClient"><Select id="invoiceClient" name="clientId" defaultValue={invoice?.client_id ?? defaultClientId ?? ""} required><option value="" disabled>Choose a client</option>{clients.map((client) => <option key={client.id} value={client.id}>{client.name}</option>)}</Select></Field>

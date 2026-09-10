@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ClipboardList, Factory, LayoutDashboard, ReceiptText, Settings, Store, Users, Wallet } from "lucide-react";
+import { ClipboardList, LayoutDashboard, ReceiptText, Settings, Store, Users, Wallet } from "lucide-react";
 import type { ComponentType } from "react";
 
 import { cn } from "@/lib/utils";
@@ -11,8 +11,8 @@ import { cn } from "@/lib/utils";
 type Tab = { href: string; label: string; icon: ComponentType<{ className?: string }> };
 
 /**
- * Two admin apps share this bar: /cms is the factory order system and /shop is
- * the showroom ledger. The pathname picks the tab set, so no page threads a
+ * Two admin apps share this bar: /factory is the factory order system and
+ * /shop is the showroom ledger. The pathname picks the tab set, so no page threads a
  * prop through just to say which app it belongs to.
  */
 const APPS = [
@@ -22,19 +22,19 @@ const APPS = [
     tabs: [
       { href: "/shop", label: "Sales", icon: Store },
       { href: "/shop/invoices", label: "Invoices", icon: ReceiptText },
-      { href: "/cms", label: "Factory", icon: Factory },
+      { href: "/shop/expenses", label: "Expenses", icon: Wallet },
     ],
   },
   {
-    base: "/cms",
-    name: "PTF Orders",
+    base: "/factory",
+    name: "PTF Factory",
     tabs: [
-      { href: "/cms", label: "Home", icon: LayoutDashboard },
-      { href: "/cms/orders", label: "Orders", icon: ClipboardList },
-      { href: "/cms/invoices", label: "Invoices", icon: ReceiptText },
-      { href: "/cms/clients", label: "Clients", icon: Users },
-      { href: "/cms/expenses", label: "Expenses", icon: Wallet },
-      { href: "/cms/settings", label: "Settings", icon: Settings },
+      { href: "/factory", label: "Home", icon: LayoutDashboard },
+      { href: "/factory/orders", label: "Orders", icon: ClipboardList },
+      { href: "/factory/invoices", label: "Invoices", icon: ReceiptText },
+      { href: "/factory/clients", label: "Clients", icon: Users },
+      { href: "/factory/expenses", label: "Expenses", icon: Wallet },
+      { href: "/factory/settings", label: "Settings", icon: Settings },
     ],
   },
 ] as const satisfies readonly { base: string; name: string; tabs: readonly Tab[] }[];

@@ -4,7 +4,7 @@ import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 
 /** Admin apps carry their own chrome. Keep in step with PROTECTED_AREAS. */
-const APPS = ["/cms", "/shop"];
+const APPS = ["/factory", "/shop"];
 
 /**
  * The CMS and the shop ledger are apps, not pages on the marketing site, so

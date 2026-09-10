@@ -14,6 +14,9 @@ const nextConfig: NextConfig = {
   },
   async redirects() {
     return [
+      { source: "/cms", destination: "/factory", permanent: true },
+      { source: "/cms/:path*", destination: "/factory/:path*", permanent: true },
+      { source: "/cms.webmanifest", destination: "/factory.webmanifest", permanent: true },
       { source: "/eyewear", destination: "/collections", permanent: true },
       { source: "/native-visions", destination: "/collections", permanent: true },
       { source: "/veterans", destination: "/", permanent: true },

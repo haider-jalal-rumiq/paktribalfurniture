@@ -52,7 +52,7 @@ export function ClientForm({ client }: { client?: Client }) {
     }
 
     setSaved(true);
-    router.push(`/cms/clients/${result.id}`);
+    router.push(`/factory/clients/${result.id}`);
     router.refresh();
   }
 
@@ -72,7 +72,7 @@ export function ClientForm({ client }: { client?: Client }) {
       return;
     }
 
-    router.push("/cms/clients");
+    router.push("/factory/clients");
     router.refresh();
   }
 

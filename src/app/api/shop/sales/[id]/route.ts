@@ -1,21 +1,35 @@
+import { shopSaleCostSchema } from "@/features/shop/shop.schema";
 import { getCmsSession } from "@/lib/cms";
 import { today } from "@/lib/cms-core";
 
 type Params = { params: Promise<{ id: string }> };
 
-/** Mark an item returned to the shop, or undo it. A return leaves the totals. */
+/**
+ * Two edits a sale row accepts: filling in the purchase price on a draft, and
+ * marking the item returned to the shop (or undoing that).
+ */
 export async function PATCH(request: Request, { params }: Params) {
   const session = await getCmsSession();
   if (!session) return Response.json({ message: "Sign in to continue." }, { status: 401 });
 
   const body = await request.json().catch(() => null);
-  if (typeof body?.returned !== "boolean") {
+  const { id } = await params;
+
+  let patch: { cost: number } | { returned_on: string | null };
+  if (body && "cost" in body) {
+    const parsed = shopSaleCostSchema.safeParse(body);
+    if (!parsed.success) {
+      return Response.json({ message: parsed.error.issues[0]?.message ?? "Check the purchase price." }, { status: 400 });
+    }
+    patch = { cost: parsed.data.cost };
+  } else if (typeof body?.returned === "boolean") {
+    patch = { returned_on: body.returned ? today() : null };
+  } else {
     return Response.json({ message: "Choose a valid action." }, { status: 400 });
   }
 
-  const { id } = await params;
   const { data, error } = await session.supabase.from("shop_sales")
-    .update({ returned_on: body.returned ? today() : null }).eq("id", id).select("id").maybeSingle();
+    .update(patch).eq("id", id).select("id").maybeSingle();
 
   if (error) {
     console.error("Could not update shop sale", { code: error.code, message: error.message });
