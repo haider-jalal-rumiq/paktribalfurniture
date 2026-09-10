@@ -2,13 +2,20 @@ import { z } from "zod";
 
 import { orderStatusValues } from "@/content/cms";
 import {
-  amountField,
   dateField,
   oneOf,
   optionalDateField,
   optionalPhone,
   optionalText,
 } from "@/features/cms/fields";
+
+export const orderItemSchema = z.object({
+  id: z.uuid(),
+  name: z.string().trim().min(1, "Enter an item name").max(200),
+  quantity: z.coerce.number().int().min(1, "Quantity must be at least 1").max(10000),
+  status: oneOf(orderStatusValues, "Choose an item status"),
+  notes: z.string().trim().max(1000),
+});
 
 export const orderInputSchema = z.object({
   clientId: z.uuid("Choose a client"),
@@ -17,7 +24,7 @@ export const orderInputSchema = z.object({
   description: z.string().trim().max(4000),
   deliveryAddress: optionalText(400),
   contactPhone: optionalPhone(),
-  totalAmount: amountField("Enter the order total in rupees", { allowZero: true }),
+  items: z.array(orderItemSchema).max(100),
   orderDate: dateField("Enter the order date"),
   expectedDate: optionalDateField(),
   status: oneOf(orderStatusValues, "Choose a status"),

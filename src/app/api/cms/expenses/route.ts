@@ -23,7 +23,6 @@ export async function POST(request: Request) {
       category: parsed.data.category,
       amount: parsed.data.amount,
       note: orNull(parsed.data.note),
-      order_id: parsed.data.orderId || null,
     })
     .select("id")
     .single();

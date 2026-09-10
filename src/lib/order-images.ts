@@ -12,6 +12,9 @@ const MAX_TOTAL = 12;
 const SIGNED_URL_TTL = 60 * 60; // one hour is plenty for a page view
 
 export function parseOrderForm(formData: FormData): { input: OrderInput; files: File[] } | { error: string } {
+  let items: unknown;
+  try { items = JSON.parse(String(formData.get("items") ?? "[]")); }
+  catch { return { error: "Check the order items and try again." }; }
   const files = formData
     .getAll("images")
     .filter((entry): entry is File => entry instanceof File && entry.size > 0);
@@ -29,7 +32,7 @@ export function parseOrderForm(formData: FormData): { input: OrderInput; files: 
     description: formData.get("description") ?? "",
     deliveryAddress: formData.get("deliveryAddress") ?? "",
     contactPhone: formData.get("contactPhone") ?? "",
-    totalAmount: formData.get("totalAmount") ?? "",
+    items,
     orderDate: formData.get("orderDate") ?? "",
     expectedDate: formData.get("expectedDate") ?? "",
     status: formData.get("status") ?? "",
@@ -111,7 +114,7 @@ export function orderRecord(input: OrderInput, imagePaths: string[]) {
     description: input.description,
     delivery_address: orNull(input.deliveryAddress),
     contact_phone: orNull(input.contactPhone),
-    total_amount: input.totalAmount,
+    items: input.items,
     order_date: input.orderDate,
     expected_date: orNull(input.expectedDate),
     status: input.status,

@@ -17,6 +17,7 @@ export const STATUS_TONE: Record<string, BadgeTone> = {
   pending: "warn",
   in_progress: "info",
   ready: "good",
+  completed: "good",
   delivered: "neutral",
   cancelled: "neutral",
 };

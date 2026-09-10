@@ -43,9 +43,40 @@ The product catalogue tool is at `/studio`; public products appear only when the
 
 ## Business CMS (`/cms`)
 
-Clients, orders, payments received and workshop expenses. Same login as Studio.
-Money is stored as whole rupees; an order's balance is derived from its payment
-rows, never stored.
+Clients, production orders, invoices, available business funds and workshop
+expenses. Same admin login as Studio. The whole site stays in white/light mode.
+
+For an existing installation, apply `supabase/cms-operations.sql` once. Fresh
+installations use `cms-schema.sql`, which includes the same upgrade. Existing
+order amounts, payment records and old expense links are preserved for exports.
+
+- **Dashboard:** Credit = added balances minus general expenses and paid labour.
+  Add an opening balance or received funds through **Add balance**. Total sales
+  is the sum of issued invoices. Creating an invoice does not add cash to Credit.
+- **Orders:** expand client → order → items. Each item has a quantity and status;
+  the overall order status is set separately. Orders have no price/payment inputs.
+  Older orders initially have no separate items; add them when editing the order.
+- **Expenses:** type any category. Expenses no longer need an order link.
+- **Labour sheet:** one editable entry per worker/pay period, with salary, agreed
+  total, advance paid, additional salary paid, leave days, and derived balance.
+  Leaves do not automatically deduct salary. Advance + salary paid count toward
+  expenses, using the entry's payment date. Updating cumulative payments moves
+  that entry's paid amount to its selected payment date; use separate entries
+  when payments need to be allocated to separate dates. Do not also enter the same
+  labour payment in general expenses. Historical general labour expenses remain
+  in the general expense total and are not copied into the new labour sheet.
+- **Invoices:** item, quantity, unit amount, free-text stock/order source and
+  calculated total. Client details are snapshotted. Edit issued invoices or void
+  them while retaining the record. Voided invoices are excluded from Total sales.
+  Filter by client and inclusive From/To dates; print the matching report and
+  individual invoices together.
+- **Print/PDF:** orders, individual invoices, invoice reports, and individual or
+  monthly labour sheets use the Pak Tribal logo and A4 layouts. Select **Print /
+  Save PDF**, then **Save as PDF** in the browser to download a shareable file.
+
+Money columns are `bigint` whole rupees. Invoice totals are generated from items
+by PostgreSQL; all-time sums use SQL and are transported as text for exact bigint
+calculations. Available Credit and labour balances are derived, never stored.
 
 ### Notifications and scheduled jobs
 
@@ -79,7 +110,8 @@ Three layers, and only the first survives losing the Supabase project itself:
 1. **Supabase point-in-time recovery** — a paid feature, off by default. Turn it
    on once real orders are in. This is a billing decision, not code.
 2. **Download a copy of everything** in `/cms/settings` — one JSON file of every
-   client, order, payment and expense.
+   client, order (including items), invoice, balance, labour entry, expense and
+   legacy payment. The version 2 export paginates all tables without a row cap.
 3. **Weekly automated export** to the private `backups` bucket, last 12 kept.
 
 ## Checks
@@ -89,10 +121,16 @@ npm run lint
 npm run typecheck
 npm run build
 npm run check:cms
+npm run verify:cms
 npm run verify http://localhost:3000
 ```
 
 The Playwright verifier writes screenshots and a report to `.verify/`.
+`verify:cms` runs the real application against an isolated local Supabase protocol
+fixture on port 3146 and writes its report, screenshots and sample PDFs to
+`.verify-cms/`. It never uses the business database. `scripts/cms-database-check.sql`
+checks PostgreSQL constraints, generated totals and RLS inside a rolled-back
+transaction. It uses explicit numbers without consuming invoice/order sequences.
 
 ## Brand assets
 

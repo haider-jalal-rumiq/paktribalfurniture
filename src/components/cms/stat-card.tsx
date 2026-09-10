@@ -40,7 +40,7 @@ export function StatCard({
       </div>
       <p
         className={cn(
-          "mt-2 whitespace-nowrap font-display leading-none tabular-nums",
+          "mt-2 break-words font-display leading-none tabular-nums",
           emphasis ? "text-[2.1rem] sm:text-[2.6rem]" : "text-[1.75rem] sm:text-[2rem]",
           tone === "accent" ? "text-accent" : "text-ink",
         )}

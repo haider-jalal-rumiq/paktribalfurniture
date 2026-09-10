@@ -10,7 +10,7 @@ export interface Balance {
   balance: number;
 }
 
-/** Balance is derived, never stored — the payment rows are the record. */
+/** Legacy record calculation only. Active orders no longer carry payments. */
 export function orderBalance(order: {
   total_amount: number;
   order_payments?: { amount: number }[] | null;
@@ -73,11 +73,11 @@ export function monthLabel(month: string): string {
 export function summariseExpenses(
   expenses: { category: string; amount: number }[],
 ): { total: number; byCategory: Record<string, number> } {
-  const byCategory: Record<string, number> = {};
+  const byCategory: Record<string, number> = Object.create(null);
   let total = 0;
   for (const expense of expenses) {
     byCategory[expense.category] = (byCategory[expense.category] ?? 0) + expense.amount;
     total += expense.amount;
   }
-  return { total, byCategory };
+  return { total, byCategory: { ...byCategory } };
 }

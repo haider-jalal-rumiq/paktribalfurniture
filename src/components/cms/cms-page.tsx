@@ -27,11 +27,11 @@ export function CmsPage({
   children: ReactNode;
 }) {
   return (
-    <div className="min-h-[100dvh] bg-canvas">
+    <div className="cms-shell min-h-[100dvh] bg-canvas">
       <CmsNav />
 
-      <div className="mx-auto w-full max-w-[1180px] px-4 pb-32 pt-5 sm:px-8 sm:pb-16 sm:pt-9">
-        <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+      <div className="cms-content mx-auto w-full max-w-[1180px] px-4 pb-32 pt-5 sm:px-8 sm:pb-16 sm:pt-9">
+        <header className="cms-screen-header flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <div className="min-w-0">
             {backHref && (
               <Link
@@ -52,7 +52,7 @@ export function CmsPage({
           {actions && <div className="flex flex-wrap items-center gap-2.5">{actions}</div>}
         </header>
 
-        <div className="mt-6">{children}</div>
+        <div className="cms-body mt-6">{children}</div>
       </div>
     </div>
   );

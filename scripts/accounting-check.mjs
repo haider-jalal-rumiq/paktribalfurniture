@@ -1,0 +1,13 @@
+import assert from "node:assert/strict";
+import { sumRupees, invoiceTotal, labourAmounts, availableCredit } from "../src/lib/accounting-core.ts";
+let count = 0;
+const check = (actual, expected, name) => { assert.deepEqual(actual, expected, name); count++; };
+check(sumRupees([{ amount: 999999999999 }, { amount: 1 }]), 1000000000000n, "Whole rupees remain exact");
+check(sumRupees(Array.from({ length: 10000 }, () => ({ amount: 999999999999 }))), 9999999999990000n, "All-time sums exceed JS safe integer without losing precision");
+check(invoiceTotal([{ amount: 12500, quantity: 2 }, { amount: 4000, quantity: 3 }]), 37000n, "Invoice quantity multiplication");
+check(invoiceTotal([]), 0n, "Empty calculation");
+check(labourAmounts({ total_amount: 38000, advance: 10000, salary_paid: 5000 }), { paid: 15000n, balance: 23000n }, "Labour balance excludes already-paid advance");
+check(labourAmounts({ total_amount: 100, advance: 50, salary_paid: 50 }).balance, 0n, "Fully paid labour");
+check(availableCredit(100000n, 7000n, 15000n), 78000n, "General and labour expenses both reduce Credit");
+check(availableCredit(0n, 7000n, 0n), -7000n, "Negative Credit is visible");
+console.log(`accounting-check: ${count} assertions passed`);
