@@ -10,7 +10,11 @@ export function cmsFixture() {
   const school = { ...client, id: id(), name: "QA School" };
   const item = { id: id(), name: "Dining table", quantity: 2, status: "in_progress", notes: "Test wood finish" };
   const order = { id: id(), order_no: 1, client_id: client.id, title: "Campus furniture", description: "Workshop order", site_label: "Main campus", delivery_address: null, contact_phone: null, total_amount: 250000, order_date: "2026-09-09", expected_date: "2026-09-11", status: "pending", items: [item, { ...item, id: id(), name: "Chairs", quantity: 12, status: "completed" }], image_paths: [], notes: "Delivery notes", created_at: stamp, updated_at: stamp };
-  const invoice = { id: id(), invoice_no: 1, client_id: client.id, client_name: client.name, client_address: client.address, client_phone: null, issued_on: "2026-09-20", items: [{ id: id(), item: "Dining table", quantity: 2, amount: 6000, source: "Order" }], total_amount: 12000, notes: "Sample invoice for verification only.", status: "issued", created_at: stamp, updated_at: stamp };
+  const invoice = { id: id(), invoice_no: 1, client_id: client.id, client_name: client.name, client_address: client.address, client_phone: null, issued_on: "2026-09-20", items: [
+    { id: id(), item: "Dining table", quantity: 1, amount: 8000, source: "Order" },
+    { id: id(), item: "Dining chair", quantity: 2, amount: 1500, source: "Stock" },
+    { id: id(), item: "Wooden stool", quantity: 1, amount: 1000, source: "Stock" },
+  ], total_amount: 12000, notes: "Sample invoice for verification only.", status: "issued", created_at: stamp, updated_at: stamp };
   const db = {
     clients: [client, school], orders: [order], expenses: [{ id: id(), spent_on: "2026-09-09", category: "material", amount: 7000, note: "Test expense", order_id: null, created_at: stamp }],
     order_payments: [], balance_entries: [{ id: id(), received_on: "2026-09-09", amount: 100000, note: "Test opening balance", created_at: stamp }],

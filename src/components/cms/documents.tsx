@@ -8,8 +8,8 @@ import { monthLabel } from "@/lib/cms-core";
 import type { OrderDetail } from "@/lib/cms";
 import type { Invoice, LabourEntry } from "@/types/database";
 
-export function Document({ title, reference, children }: { title: string; reference?: string; children: ReactNode }) {
-  return <article className="ptf-document">
+export function Document({ title, reference, children, className = "" }: { title: string; reference?: string; children: ReactNode; className?: string }) {
+  return <article className={`ptf-document ${className}`}>
     <header className="document-header">
       <div><Logo className="w-44 sm:w-52" /><p className="mt-3 text-xs text-muted">{site.whatsapp.display}</p></div>
       <div className="sm:text-right"><h2 className="font-display text-3xl text-accent">{title}</h2>{reference && <p className="mt-2 text-sm font-semibold tabular-nums text-ink">{reference}</p>}</div>
@@ -20,16 +20,26 @@ export function Document({ title, reference, children }: { title: string; refere
 }
 
 export function InvoiceDocument({ invoice }: { invoice: Invoice }) {
-  return <Document title={invoice.status === "void" ? "Voided invoice" : "Invoice"} reference={invoiceNumber(invoice.invoice_no)}>
+  return <Document title={invoice.status === "void" ? "Voided invoice" : "Invoice"} reference={invoiceNumber(invoice.invoice_no)} className="invoice-document">
     <div className="document-parties">
       <div><p className="document-label">Bill to</p><p className="mt-2 break-words text-lg font-semibold">{invoice.client_name}</p>{invoice.client_address && <p className="mt-1 whitespace-pre-wrap break-words text-sm text-ink-soft">{invoice.client_address}</p>}{invoice.client_phone && <p className="mt-1 text-sm text-ink-soft">{invoice.client_phone}</p>}</div>
       <dl className="text-sm"><dt className="document-label">Invoice date</dt><dd className="mt-2">{showDate(invoice.issued_on)}</dd><dt className="document-label mt-4">Currency</dt><dd className="mt-2">Pakistani rupees (PKR)</dd></dl>
     </div>
     <table className="document-table invoice-table">
-      <thead><tr><th scope="col">Item</th><th scope="col">Stock / order</th><th scope="col" className="number">Qty</th><th scope="col" className="number">Unit amount</th><th scope="col" className="number">Amount</th></tr></thead>
-      <tbody>{invoice.items.map((item) => <tr key={item.id}><td data-label="Item">{item.item}</td><td data-label="Stock / order">{item.source}</td><td data-label="Qty" className="number">{item.quantity}</td><td data-label="Unit amount" className="number">{formatPkr(item.amount)}</td><td data-label="Amount" className="number">{formatPkr(BigInt(item.amount) * BigInt(item.quantity))}</td></tr>)}</tbody>
+      <caption className="sr-only">Invoice items. All prices are in Pakistani rupees.</caption>
+      <thead><tr><th scope="col" aria-label="Serial number">S.No.</th><th scope="col">Item</th><th scope="col" className="number">Qty</th><th scope="col" className="number">Unit price<span className="invoice-currency"> (Rs)</span></th><th scope="col" className="number">Total price<span className="invoice-currency"> (Rs)</span></th></tr></thead>
+      <tbody>{invoice.items.map((item, index) => <tr key={item.id}>
+        <td className="invoice-serial">{index + 1}</td>
+        <td><span className="invoice-item-name">{item.item}</span><span className="invoice-item-source">{item.source}</span></td>
+        <td className="number">{item.quantity}</td>
+        <td className="number">{formatPkr(item.amount).replace(/^Rs /, "")}</td>
+        <td className="number invoice-line-total">{formatPkr(BigInt(item.amount) * BigInt(item.quantity)).replace(/^Rs /, "")}</td>
+      </tr>)}</tbody>
     </table>
-    <div className="document-total"><span>Total amount</span><strong>{formatPkr(invoice.total_amount)}</strong></div>
+    <div className="invoice-bill">
+      <div className="invoice-bill-detail"><span>{invoice.items.length} line items</span><span>Total quantity: {invoice.items.reduce((sum, item) => sum + item.quantity, 0)}</span></div>
+      <div className="document-total"><span>Grand total</span><strong>{formatPkr(invoice.total_amount)}</strong></div>
+    </div>
     {invoice.status === "void" && <p className="mt-5 text-sm font-semibold text-accent">Voided. Excluded from Total sales.</p>}
     {invoice.notes && <section className="mt-8"><h3 className="document-label">Notes</h3><p className="mt-2 whitespace-pre-wrap break-words text-sm text-ink-soft">{invoice.notes}</p></section>}
   </Document>;
