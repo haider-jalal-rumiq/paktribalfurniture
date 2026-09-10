@@ -20,6 +20,17 @@ export type Invoice = {
   items: InvoiceItem[]; total_amount: number; notes: string | null;
   status: "issued" | "void"; created_at: string; updated_at: string;
 };
+export type ShopSale = {
+  id: string; sale_no: number; sold_on: string; name: string; cost: number;
+  margin_pct: number; discount: number; returned_on: string | null; note: string | null;
+  created_at: string; updated_at: string;
+};
+export type ShopInvoice = {
+  id: string; invoice_no: number; customer_name: string; customer_phone: string | null;
+  customer_address: string | null; issued_on: string; items: InvoiceItem[];
+  total_amount: number; notes: string | null; status: "issued" | "void";
+  created_at: string; updated_at: string;
+};
 type TableShape<Row, Required extends keyof Row> = {
   Row: Row; Insert: Partial<Row> & Pick<Row, Required>; Update: Partial<Row>; Relationships: [];
 };
@@ -28,6 +39,13 @@ export interface Database {
   public: {
     Tables: {
       balance_entries: TableShape<BalanceEntry, "amount" | "note">;
+      shop_sales: TableShape<ShopSale, "name" | "cost">;
+      shop_invoices: {
+        Row: ShopInvoice;
+        Insert: Omit<Partial<ShopInvoice>, "total_amount"> & Pick<ShopInvoice, "customer_name" | "items">;
+        Update: Omit<Partial<ShopInvoice>, "total_amount" | "invoice_no">;
+        Relationships: [];
+      };
       labour_entries: TableShape<LabourEntry, "name" | "period" | "salary" | "total_amount">;
       invoices: {
         Row: Invoice;

@@ -19,15 +19,16 @@ delete it.
 
 ---
 
-## Three apps, one codebase
+## Four apps, one codebase
 
 | | Route | Who | What |
 |---|---|---|---|
 | **Site** | `/`, `/collections`, `/custom`, `/contact`, `/privacy` | public | catalogue + WhatsApp enquiry handoff |
 | **Studio** | `/studio` | admin | the product catalogue |
-| **CMS** | `/cms` | admin | clients, orders, invoices, balances, labour, expenses |
+| **CMS** | `/cms` | admin | the *factory*: clients, orders, invoices, balances, labour, expenses |
+| **Shop** | `/shop` | admin | the *showroom*: counter sales, profit split, shop invoices |
 
-Both admin areas use the **same** Supabase email+password login and the same
+All admin areas use the **same** Supabase email+password login and the same
 claim: `app_metadata.role === "admin"`. `src/lib/supabase/proxy.ts` holds one
 `PROTECTED_AREAS` list — add an area there and to the matcher in
 `src/proxy.ts`, never a new branch.
@@ -39,8 +40,13 @@ There is no `middleware.ts`.
 
 `src/content/site.ts` — name, WhatsApp number, Instagram.
 `src/content/catalog.ts` — the eight categories.
-`src/content/cms.ts` — client types, order statuses, legacy payment methods and
-legacy expense category labels. New expense categories are free text.
+`src/content/cms.ts` — client types, order statuses, legacy payment methods,
+legacy expense category labels, the two printed trading names, and the
+partner profit shares. New expense categories are free text.
+
+**Two brands print from one component.** `/cms` invoices are headed WOODONA
+HERITAGE (the factory), `/shop` invoices PAK TRIBAL FURNITURE (the showroom).
+Both go through `InvoiceDocument` with a `brand` prop; never fork the document.
 
 **Never hardcode a phone number or a category anywhere else.** The zod schemas,
 the `<select>` options and the SQL CHECK constraints all derive from these three
@@ -102,9 +108,11 @@ the JS variants and the CSS block in `globals.css` neutralises keyframes.
 ```
 src/
   app/           routes only — no business logic
-    cms/         the order system (admin)
+    cms/         the factory order system (admin)
+    shop/        the showroom sales ledger (admin)
     studio/      the product catalogue (admin)
     api/cms/*    CMS writes, each guarded by getCmsSession()
+    api/shop/*   shop writes, likewise guarded by getCmsSession()
     api/cron/*   scheduled jobs, guarded by CRON_SECRET — the ONLY
                  place allowed to import lib/supabase/admin.ts
   components/
@@ -115,6 +123,7 @@ src/
   features/
     auth/        admin login + sign out, shared by /studio and /cms
     cms/         schemas + forms for client, order, invoice, balance, labour, expense
+    shop/        schemas + forms for a counter sale and a shop invoice
     inquiry/     public enquiry form (WhatsApp handoff, not booking)
     studio/      product editor
   content/       site.ts · catalog.ts · cms.ts — the sources of truth
@@ -135,6 +144,12 @@ src/
 - **Balances are derived, never stored.** Credit is added balances minus expenses
   and paid labour. Invoices alone determine sales and do not increase Credit.
   Legacy `order_payments` stay in backups; active orders have no payments.
+- **A shop sale stores only cost, margin % and discount.** Marked price, sale
+  and profit come from `shopSaleAmounts()` in `lib/accounting-core.ts`; the
+  `shop_sales_sale_not_negative` CHECK repeats its integer rounding so the two
+  can never disagree. A returned item keeps its row and leaves the totals.
+  Shop net profit deducts the *CMS* expenses (general + paid labour), on
+  purpose — the owner runs both books out of one pocket.
 - **"Today" means today in Pakistan.** Use `today()` from `lib/cms-core.ts`, not
   `new Date()` — the server runs in UTC and would roll the date at 5am PKT.
 - Anything on a *public* page derived from "now" must be read on the client;
@@ -181,7 +196,7 @@ npm run dev        # dev server
 npm run build      # production build (must pass)
 npm run lint       # eslint (fix causes, do not suppress)
 npm run typecheck  # tsc --noEmit
-npm run check:cms  # assert-based self-check for money, balance, date logic
+npm run check:cms  # assert-based self-check for money, balance, date, shop logic
 npm run verify     # Playwright: screenshots, a11y, form, SEO, reduced motion
 ```
 

@@ -11,6 +11,7 @@ import type { Database } from "@/types/database";
 const PROTECTED_AREAS = [
   { base: "/studio", login: "/studio/login" },
   { base: "/cms", login: "/cms/login" },
+  { base: "/shop", login: "/shop/login" },
 ] as const;
 
 function areaFor(pathname: string) {

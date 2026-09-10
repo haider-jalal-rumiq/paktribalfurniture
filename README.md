@@ -29,6 +29,7 @@ The public catalogue works without Supabase, but products stay empty and enquiry
 1. Create a dedicated Supabase project for Pak Tribal Furniture. Do not reuse an unrelated production project.
 2. Open the SQL editor and run `supabase/schema.sql` once. It creates the tables, indexes, row-level security policies, explicit Data API grants, and the `product-images` Storage bucket.
    Then run `supabase/cms-schema.sql` for the business CMS: clients, orders, payments, expenses, push subscriptions, and the private `order-images` and `backups` buckets.
+   Then run `supabase/shop-schema.sql` for the shop ledger: counter sales and shop invoices. It reuses helpers created by the two files above, so run it last.
 3. Copy the project URL and publishable key into `.env.local` as `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`.
 4. Keep public email signups disabled in Supabase Auth.
 5. Create the owner account in Authentication, then assign this account the admin role in its `app_metadata`:
@@ -39,7 +40,25 @@ The public catalogue works without Supabase, but products stay empty and enquiry
 
 Only `app_metadata` is trusted for authorization. Never put an admin role in user-editable metadata and never expose a secret or service-role key to the browser.
 
-The product catalogue tool is at `/studio`; public products appear only when their `published` switch is enabled. The business CMS is at `/cms`.
+The product catalogue tool is at `/studio`; public products appear only when their `published` switch is enabled. The factory CMS is at `/cms` and the shop ledger at `/shop`.
+
+## Shop ledger (`/shop`)
+
+The showroom's own book, separate from the factory orders in `/cms`. Same admin
+login.
+
+- **A sale** stores three figures: the purchase price, the profit margin
+  (40% by default) and any discount given in rupees. Marked price, sale and
+  profit are calculated, never stored — Rs 10,000 at 40% is marked Rs 14,000,
+  less a Rs 500 discount sells for Rs 13,500 at Rs 3,500 profit.
+- **A return** keeps its row and drops out of both sales and profit. Undo it
+  from the same row if the customer changes their mind.
+- **Calculate expense** deducts the CMS expenses (general expenses plus paid
+  labour) from gross profit, then splits the net between the two partners at
+  30% and 70%. Without it, the tiles show gross profit.
+- **Invoices** are headed PAK TRIBAL FURNITURE and take a typed customer name,
+  so a counter sale needs no client record. Pull a line straight from the
+  ledger with **Add from the shop ledger**, or type items by hand.
 
 ## Business CMS (`/cms`)
 

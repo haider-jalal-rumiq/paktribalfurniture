@@ -3,36 +3,56 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ClipboardList, LayoutDashboard, ReceiptText, Settings, Users, Wallet } from "lucide-react";
+import { ClipboardList, Factory, LayoutDashboard, ReceiptText, Settings, Store, Users, Wallet } from "lucide-react";
 import type { ComponentType } from "react";
 
 import { cn } from "@/lib/utils";
 
-const TABS = [
-  { href: "/cms", label: "Home", icon: LayoutDashboard },
-  { href: "/cms/orders", label: "Orders", icon: ClipboardList },
-  { href: "/cms/invoices", label: "Invoices", icon: ReceiptText },
-  { href: "/cms/clients", label: "Clients", icon: Users },
-  { href: "/cms/expenses", label: "Expenses", icon: Wallet },
-  { href: "/cms/settings", label: "Settings", icon: Settings },
-] as const satisfies readonly {
-  href: string;
-  label: string;
-  icon: ComponentType<{ className?: string }>;
-}[];
+type Tab = { href: string; label: string; icon: ComponentType<{ className?: string }> };
 
-function isActive(pathname: string, href: string): boolean {
-  return href === "/cms" ? pathname === "/cms" : pathname.startsWith(href);
+/**
+ * Two admin apps share this bar: /cms is the factory order system and /shop is
+ * the showroom ledger. The pathname picks the tab set, so no page threads a
+ * prop through just to say which app it belongs to.
+ */
+const APPS = [
+  {
+    base: "/shop",
+    name: "PTF Shop",
+    tabs: [
+      { href: "/shop", label: "Sales", icon: Store },
+      { href: "/shop/invoices", label: "Invoices", icon: ReceiptText },
+      { href: "/cms", label: "Factory", icon: Factory },
+    ],
+  },
+  {
+    base: "/cms",
+    name: "PTF Orders",
+    tabs: [
+      { href: "/cms", label: "Home", icon: LayoutDashboard },
+      { href: "/cms/orders", label: "Orders", icon: ClipboardList },
+      { href: "/cms/invoices", label: "Invoices", icon: ReceiptText },
+      { href: "/cms/clients", label: "Clients", icon: Users },
+      { href: "/cms/expenses", label: "Expenses", icon: Wallet },
+      { href: "/cms/settings", label: "Settings", icon: Settings },
+    ],
+  },
+] as const satisfies readonly { base: string; name: string; tabs: readonly Tab[] }[];
+
+function isActive(pathname: string, href: string, base: string): boolean {
+  return href === base ? pathname === base : pathname.startsWith(href);
 }
 
 export function CmsNav() {
   const pathname = usePathname();
+  const app = APPS.find(({ base }) => pathname === base || pathname.startsWith(`${base}/`)) ?? APPS[1];
+  const { base, name, tabs: TABS } = app;
 
   return (
     <div className="cms-navigation contents">
       {/* Phone: a compact brand bar, since there is no site header here. */}
       <div className="sticky top-0 z-30 border-b border-hairline bg-canvas/90 backdrop-blur sm:hidden">
-        <Link href="/cms" className="flex min-h-14 items-center gap-2.5 px-4">
+        <Link href={base} className="flex min-h-14 items-center gap-2.5 px-4">
           <Image
             src="/icons/icon-192.png"
             alt=""
@@ -41,9 +61,7 @@ export function CmsNav() {
             className="rounded-md"
             priority
           />
-          <span className="text-sm font-bold uppercase tracking-[0.16em] text-ink">
-            PTF Orders
-          </span>
+          <span className="text-sm font-bold uppercase tracking-[0.16em] text-ink">{name}</span>
         </Link>
       </div>
 
@@ -53,14 +71,12 @@ export function CmsNav() {
         className="sticky top-0 z-30 hidden overflow-x-auto border-b border-hairline bg-canvas/90 backdrop-blur sm:block"
       >
         <div className="mx-auto flex w-full max-w-[1180px] items-center gap-1 px-8">
-          <Link href="/cms" className="mr-4 flex shrink-0 items-center gap-2.5">
+          <Link href={base} className="mr-4 flex shrink-0 items-center gap-2.5">
             <Image src="/icons/icon-192.png" alt="" width={30} height={30} className="rounded-md" />
-            <span className="text-sm font-bold uppercase tracking-[0.16em] text-ink">
-              PTF Orders
-            </span>
+            <span className="text-sm font-bold uppercase tracking-[0.16em] text-ink">{name}</span>
           </Link>
           {TABS.map((tab) => {
-            const active = isActive(pathname, tab.href);
+            const active = isActive(pathname, tab.href, base);
             return (
               <Link
                 key={tab.href}
@@ -90,9 +106,9 @@ export function CmsNav() {
         aria-label="Sections"
         className="fixed inset-x-0 bottom-0 z-30 border-t border-hairline bg-canvas/95 pb-[env(safe-area-inset-bottom)] backdrop-blur sm:hidden"
       >
-        <div className="grid grid-cols-6 px-1">
+        <div className="grid px-1" style={{ gridTemplateColumns: `repeat(${TABS.length}, minmax(0, 1fr))` }}>
           {TABS.map((tab) => {
-            const active = isActive(pathname, tab.href);
+            const active = isActive(pathname, tab.href, base);
             return (
               <Link
                 key={tab.href}

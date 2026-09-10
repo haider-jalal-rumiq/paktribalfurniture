@@ -128,8 +128,9 @@ export function NotConfigured() {
     <div className="rounded-[var(--radius-card)] border border-accent/30 bg-accent/8 p-5">
       <h2 className="font-display text-2xl text-ink">Connect Supabase to begin</h2>
       <p className="mt-2 text-sm leading-6 text-ink-soft">
-        Apply <code className="text-accent-deep">supabase/schema.sql</code> then{" "}
-        <code className="text-accent-deep">supabase/cms-schema.sql</code>, set the environment
+        Apply <code className="text-accent-deep">supabase/schema.sql</code>,{" "}
+        <code className="text-accent-deep">supabase/cms-schema.sql</code> then{" "}
+        <code className="text-accent-deep">supabase/shop-schema.sql</code>, set the environment
         variables, and give your Supabase Auth user the admin role. The checklist is in README.md.
       </p>
     </div>

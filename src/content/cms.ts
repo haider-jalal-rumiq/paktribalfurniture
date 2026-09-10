@@ -70,5 +70,13 @@ export const expenseCategoryValues: readonly string[] = expenseCategories.map((c
 /** Legacy category labels remain readable; new expenses accept any category. */
 export const labourExpenseLabel = "Labour payments";
 
-/** The trading name shown on customer invoices and invoice reports. */
-export const invoiceBrand = { name: "WOODONA HERITAGE" } as const;
+/**
+ * Trading names on printed documents. `lines` is the stacked lockup in the
+ * document header; the CSS gives the last line the smaller treatment.
+ * /cms bills the factory work, /shop bills the showroom counter.
+ */
+export const invoiceBrand = { name: "WOODONA HERITAGE", lines: ["WOODONA", "HERITAGE"] } as const;
+export const shopBrand = { name: "PAK TRIBAL FURNITURE", lines: ["PAK TRIBAL", "FURNITURE"] } as const;
+
+/** The two shop partners split net profit. Shares must add up to 100. */
+export const partnerShares = { minor: 30, major: 70 } as const;
