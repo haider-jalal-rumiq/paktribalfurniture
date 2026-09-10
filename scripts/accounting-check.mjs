@@ -1,28 +1,53 @@
 import assert from "node:assert/strict";
-import { sumRupees, invoiceTotal, labourAmounts, availableCredit, shopSaleAmounts, shopTotals, partnerSplit } from "../src/lib/accounting-core.ts";
+import {
+  sumRupees, invoiceTotal, labourTotals, availableCredit, shopSaleAmounts,
+  manualSalePrice, achievedMarginPct, shopTotals, invoiceDiscount, partnerSplit,
+} from "../src/lib/accounting-core.ts";
 let count = 0;
 const check = (actual, expected, name) => { assert.deepEqual(actual, expected, name); count++; };
+
 check(sumRupees([{ amount: 999999999999 }, { amount: 1 }]), 1000000000000n, "Whole rupees remain exact");
 check(sumRupees(Array.from({ length: 10000 }, () => ({ amount: 999999999999 }))), 9999999999990000n, "All-time sums exceed JS safe integer without losing precision");
 check(invoiceTotal([{ amount: 12500, quantity: 2 }, { amount: 4000, quantity: 3 }]), 37000n, "Invoice quantity multiplication");
 check(invoiceTotal([]), 0n, "Empty calculation");
-check(labourAmounts({ total_amount: 38000, advance: 10000, salary_paid: 5000 }), { paid: 15000n, balance: 23000n }, "Labour balance excludes already-paid advance");
-check(labourAmounts({ total_amount: 100, advance: 50, salary_paid: 50 }).balance, 0n, "Fully paid labour");
 check(availableCredit(100000n, 7000n, 15000n), 78000n, "General and labour expenses both reduce Credit");
 check(availableCredit(0n, 7000n, 0n), -7000n, "Negative Credit is visible");
-// Shop counter sale: the owner's worked example, cost 10,000 at 40% less Rs 500.
-check(shopSaleAmounts({ cost: 10000, margin_pct: 40, discount: 500 }), { cost: 10000n, marked: 14000n, discount: 500n, sale: 13500n, profit: 3500n }, "Margin then discount, profit over cost");
-check(shopSaleAmounts({ cost: 10000, margin_pct: 40, discount: 0 }).profit, 4000n, "No discount keeps the whole margin");
-check(shopSaleAmounts({ cost: 10000, margin_pct: 40, discount: 4500 }).profit, -500n, "A discount past the margin is a real loss, not zero");
-check(shopSaleAmounts({ cost: 3333, margin_pct: 40, discount: 0 }).marked, 4666n, "Half-rupee margin rounds to whole rupees, matching the SQL CHECK");
-check(shopSaleAmounts({ cost: 999999999999, margin_pct: 1000, discount: 0 }).sale, 10999999999989n, "Largest sale stays exact past the JS safe integer");
+
+// Manual pricing: margin onto the purchase price, then a percentage discount.
+check(manualSalePrice(10000, 40, 0), { marked: 14000n, discount: 0n, salePrice: 14000n }, "Margin with no discount");
+check(manualSalePrice(10000, 40, 5), { marked: 14000n, discount: 700n, salePrice: 13300n }, "5% off the marked price");
+check(manualSalePrice(10000, 40, 100), { marked: 14000n, discount: 14000n, salePrice: 0n }, "A full discount gives the item away, not a negative price");
+check(manualSalePrice(3333, 40, 0).marked, 4666n, "Half-rupee margin rounds to whole rupees, matching the SQL CHECK");
+check(manualSalePrice(999999999999, 1000, 0).salePrice, 10999999999989n, "Largest price stays exact past the JS safe integer");
+
+// A row's figures. Quantity multiplies both sides; a draft has unknown profit.
+check(shopSaleAmounts({ quantity: 1, sale_price: 13300, cost: 10000 }), { quantity: 1n, unit: 13300n, sale: 13300n, cost: 10000n, profit: 3300n }, "Single unit");
+check(shopSaleAmounts({ quantity: 6, sale_price: 7000, cost: 5000 }), { quantity: 6n, unit: 7000n, sale: 42000n, cost: 30000n, profit: 12000n }, "Quantity multiplies sale and cost");
+check(shopSaleAmounts({ quantity: 2, sale_price: 7000, cost: null }).profit, null, "A draft row has unknown profit, not zero");
+check(shopSaleAmounts({ quantity: 1, sale_price: 9000, cost: 10000 }).profit, -1000n, "Selling under cost is a real loss");
+
+check(achievedMarginPct(13300n, 10000n), 33, "Margin is derived once the cost is known");
+check(achievedMarginPct(13300n, null), null, "No cost, no margin");
+check(achievedMarginPct(13300n, 0n), null, "Free stock has no margin to divide by");
 
 const ledger = [
-  { cost: 10000, margin_pct: 40, discount: 500, returned_on: null },
-  { cost: 20000, margin_pct: 40, discount: 0, returned_on: null },
-  { cost: 5000, margin_pct: 40, discount: 0, returned_on: "2026-09-01" },
+  { quantity: 1, sale_price: 13300, cost: 10000, returned_on: null },
+  { quantity: 2, sale_price: 7000, cost: null, returned_on: null },
+  { quantity: 1, sale_price: 7000, cost: 5000, returned_on: "2026-09-01" },
 ];
-check(shopTotals(ledger), { sold: 2, sales: 41500n, profit: 11500n, returned: 1, returnedSales: 7000n }, "A returned item leaves both sales and profit");
+check(shopTotals(ledger), { sold: 2, sales: 27300n, profit: 3300n, drafts: 1, returned: 1, returnedSales: 7000n }, "Drafts count in sales but not profit; returns count in neither");
+check(shopTotals([]), { sold: 0, sales: 0n, profit: 0n, drafts: 0, returned: 0, returnedSales: 0n }, "Empty ledger");
+
+check(invoiceDiscount(14000n, 5), { discount: 700n, total: 13300n }, "Invoice discount is a percentage");
+check(invoiceDiscount(14000n, 0), { discount: 0n, total: 14000n }, "No discount leaves the subtotal");
+check(invoiceDiscount(999n, 50), { discount: 500n, total: 499n }, "Half a rupee rounds up, matching the SQL");
+
+// Labour payslip, the owner's worked example.
+const shift = { salary: 45000, per_day_salary: 1730, ot_hours: 12, ot_rate: 250, deduction: 500, leaves: 2, advance: 10000, salary_paid: 20000 };
+check(labourTotals(shift), { leaveDeduction: 3460n, overtime: 3000n, total: 44040n, paid: 30000n, balance: 14040n }, "Salary plus overtime, less leave and other deductions");
+check(labourTotals({ ...shift, leaves: 0, ot_hours: 0, deduction: 0 }).total, 45000n, "Bare salary when nothing is added or taken off");
+check(labourTotals({ ...shift, salary: 1000, deduction: 5000, ot_hours: 0, leaves: 0 }).total, -4000n, "Over-deduction shows as negative rather than clamping to zero");
+check(labourTotals({ ...shift, advance: 0, salary_paid: 0 }).balance, 44040n, "Nothing paid yet leaves the whole total owing");
 
 check(partnerSplit(11500n, 30n), { minor: 3450n, major: 8050n }, "30/70 split");
 check(partnerSplit(11500n, 30n).minor + partnerSplit(11500n, 30n).major, 11500n, "The two shares always sum to the net");

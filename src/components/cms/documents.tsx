@@ -3,7 +3,7 @@ import { Logo, LogoMark } from "@/components/layout/logo";
 import { site } from "@/content/site";
 import { invoiceBrand, orderStatusLabel } from "@/content/cms";
 import { formatPkr } from "@/lib/money";
-import { labourAmounts, showDate } from "@/lib/accounting-core";
+import { invoiceTotal, labourTotals, showDate } from "@/lib/accounting-core";
 import { monthLabel } from "@/lib/cms-core";
 import type { OrderDetail } from "@/lib/cms";
 import type { InvoiceItem, LabourEntry } from "@/types/database";
@@ -32,10 +32,14 @@ export function Document({ title, reference, children, className = "", brand }: 
 export type InvoiceLike = {
   client_name: string; client_address: string | null; client_phone: string | null;
   issued_on: string; items: InvoiceItem[]; total_amount: number;
+  /** Absent on factory invoices, which carry no discount. */
+  discount_pct?: number;
   notes: string | null; status: "issued" | "void";
 };
 
 export function InvoiceDocument({ invoice, brand = invoiceBrand, reference }: { invoice: InvoiceLike; brand?: Brand; reference?: string }) {
+  const discountPct = invoice.discount_pct ?? 0;
+  const subtotal = invoiceTotal(invoice.items);
   return <Document title={invoice.status === "void" ? "Voided invoice" : "Invoice"} reference={reference} className="invoice-document" brand={brand}>
     <div className="document-parties">
       <div><p className="document-label">Bill to</p><p className="mt-2 break-words text-lg font-semibold">{invoice.client_name}</p>{invoice.client_address && <p className="mt-1 whitespace-pre-wrap break-words text-sm text-ink-soft">{invoice.client_address}</p>}{invoice.client_phone && <p className="mt-1 text-sm text-ink-soft">{invoice.client_phone}</p>}</div>
@@ -54,6 +58,8 @@ export function InvoiceDocument({ invoice, brand = invoiceBrand, reference }: { 
     </table>
     <div className="invoice-bill">
       <div className="invoice-bill-detail"><span>{invoice.items.length} line items</span><span>Total quantity: {invoice.items.reduce((sum, item) => sum + item.quantity, 0)}</span></div>
+      {discountPct > 0 && <dl className="invoice-bill-detail mt-3"><dt>Subtotal</dt><dd>{formatPkr(subtotal)}</dd></dl>}
+      {discountPct > 0 && <dl className="invoice-bill-detail mt-1"><dt>Discount {discountPct}%</dt><dd>− {formatPkr(subtotal - BigInt(invoice.total_amount))}</dd></dl>}
       <div className="document-total"><span>Grand total</span><strong>{formatPkr(invoice.total_amount)}</strong></div>
     </div>
     {invoice.status === "void" && <p className="mt-5 text-sm font-semibold text-accent">Voided. Excluded from Total sales.</p>}
@@ -76,12 +82,46 @@ export function OrderDocument({ order }: { order: OrderDetail }) {
 }
 
 export function LabourDocument({ entries, month }: { entries: LabourEntry[]; month: string }) {
-  const totals = entries.reduce((sum, row) => ({ total: sum.total + BigInt(row.total_amount), paid: sum.paid + labourAmounts(row).paid, balance: sum.balance + labourAmounts(row).balance }), { total: 0n, paid: 0n, balance: 0n });
+  const rows = entries.map((entry) => ({ entry, totals: labourTotals(entry) }));
+  const sum = (pick: (row: (typeof rows)[number]) => bigint) => rows.reduce((total, row) => total + pick(row), 0n);
   return <Document title="Labour sheet" reference={monthLabel(month)}>
     <p className="mb-6 text-sm text-muted">Salary period: {monthLabel(month)} · {entries.length} {entries.length === 1 ? "entry" : "entries"}</p>
-    <table className="document-table labour-table"><thead><tr><th scope="col">Name</th><th scope="col" className="number">Salary</th><th scope="col" className="number">Leaves</th><th scope="col" className="number">Total</th><th scope="col" className="number">Advance</th><th scope="col" className="number">Salary paid</th><th scope="col" className="number">Balance</th></tr></thead><tbody>{entries.map((row) => <tr key={row.id}><td data-label="Name">{row.name}<p className="mt-1 text-xs text-muted">{showDate(row.paid_on)}</p></td><td data-label="Salary" className="number">{formatPkr(row.salary)}</td><td data-label="Leaves" className="number">{row.leaves}</td><td data-label="Total" className="number">{formatPkr(row.total_amount)}</td><td data-label="Advance" className="number">{formatPkr(row.advance)}</td><td data-label="Salary paid" className="number">{formatPkr(row.salary_paid)}</td><td data-label="Balance" className="number">{formatPkr(labourAmounts(row).balance)}</td></tr>)}</tbody></table>
-    <dl className="document-summary"><div><dt>Total amount</dt><dd>{formatPkr(totals.total)}</dd></div><div><dt>Total paid</dt><dd>{formatPkr(totals.paid)}</dd></div><div><dt>Balance remaining</dt><dd>{formatPkr(totals.balance)}</dd></div></dl>
-    <p className="mt-6 text-xs text-muted">Total paid includes advance and salary paid. Leaves are recorded without automatic salary deductions.</p>
+    <table className="document-table labour-table">
+      <caption className="sr-only">Labour payslips. All amounts are in Pakistani rupees.</caption>
+      <thead><tr>
+        <th scope="col">Name</th>
+        <th scope="col" className="number">Salary</th>
+        <th scope="col" className="number">Overtime</th>
+        <th scope="col" className="number">Deductions</th>
+        <th scope="col" className="number">Total</th>
+        <th scope="col" className="number">Paid</th>
+        <th scope="col" className="number">Balance</th>
+      </tr></thead>
+      <tbody>{rows.map(({ entry, totals }) => <tr key={entry.id}>
+        <td data-label="Name">
+          {entry.name}
+          <p className="mt-1 text-xs text-muted">{showDate(entry.paid_on)}</p>
+          {/* The working, so a printed payslip can be checked without the app. */}
+          <p className="mt-1 text-xs text-muted">
+            Per day {formatPkr(entry.per_day_salary)} · {entry.leaves} {entry.leaves === 1 ? "leave" : "leaves"}
+            {entry.ot_hours > 0 ? ` · OT ${entry.ot_hours} h @ ${formatPkr(entry.ot_rate)}` : ""}
+            {entry.deduction > 0 ? ` · other ${formatPkr(entry.deduction)}` : ""}
+          </p>
+        </td>
+        <td data-label="Salary" className="number">{formatPkr(entry.salary)}</td>
+        <td data-label="Overtime" className="number">{formatPkr(totals.overtime)}</td>
+        <td data-label="Deductions" className="number">{formatPkr(totals.leaveDeduction + BigInt(entry.deduction))}</td>
+        <td data-label="Total" className="number">{formatPkr(totals.total)}</td>
+        <td data-label="Paid" className="number">{formatPkr(totals.paid)}</td>
+        <td data-label="Balance" className="number">{formatPkr(totals.balance)}</td>
+      </tr>)}</tbody>
+    </table>
+    <dl className="document-summary">
+      <div><dt>Total payable</dt><dd>{formatPkr(sum((row) => row.totals.total))}</dd></div>
+      <div><dt>Total paid</dt><dd>{formatPkr(sum((row) => row.totals.paid))}</dd></div>
+      <div><dt>Balance remaining</dt><dd>{formatPkr(sum((row) => row.totals.balance))}</dd></div>
+    </dl>
+    <p className="mt-6 text-xs text-muted">Total payable is salary plus overtime, less leave and other deductions. Total paid includes advance and salary paid.</p>
     {entries.some((row) => row.notes) && <section className="mt-6"><h3 className="document-label">Notes</h3>{entries.filter((row) => row.notes).map((row) => <p key={row.id} className="mt-2 whitespace-pre-wrap break-words text-sm"><strong>{row.name}:</strong> {row.notes}</p>)}</section>}
   </Document>;
 }

@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import { orderStatusValues } from "@/content/cms";
 import {
+  checkboxField,
   dateField,
   oneOf,
   optionalDateField,
@@ -28,6 +29,7 @@ export const orderInputSchema = z.object({
   orderDate: dateField("Enter the order date"),
   expectedDate: optionalDateField(),
   status: oneOf(orderStatusValues, "Choose a status"),
+  urgent: checkboxField(),
   notes: optionalText(4000),
   existingImagePaths: z.array(z.string().max(400)).max(12),
 });

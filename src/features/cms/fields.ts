@@ -25,6 +25,17 @@ export const amountField = (message: string, { allowZero = false } = {}) =>
     return parsed;
   });
 
+/**
+ * An unticked checkbox is absent from FormData, not "false" — so a missing key
+ * is the off state. Written explicitly rather than with z.coerce.boolean(),
+ * which would read the string "false" as true.
+ */
+export const checkboxField = () =>
+  z
+    .union([z.string(), z.boolean()])
+    .optional()
+    .transform((value) => value === true || value === "on" || value === "true");
+
 export function isCalendarDate(value: string): boolean {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value) || value < "1900-01-01" || value > "9999-12-31") return false;
   const date = new Date(`${value}T00:00:00Z`);

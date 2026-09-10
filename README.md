@@ -8,7 +8,7 @@ An animated, responsive furniture catalogue built with Next.js 16, React 19, Tai
 - CMS-managed products with multiple photos, drafts, publishing, and featured placement
 - Customer enquiries saved to Supabase before a prefilled WhatsApp handoff
 - A protected Studio dashboard for products and recent enquiries
-- A protected business CMS at `/cms` for clients, orders, payments and workshop
+- A protected business CMS at `/factory` for clients, orders, payments and workshop
   expenses, installable on a phone as a PWA with due-date push notifications
 - Responsive light and dark color systems with reduced-motion support
 
@@ -29,7 +29,7 @@ The public catalogue works without Supabase, but products stay empty and enquiry
 1. Create a dedicated Supabase project for Pak Tribal Furniture. Do not reuse an unrelated production project.
 2. Open the SQL editor and run `supabase/schema.sql` once. It creates the tables, indexes, row-level security policies, explicit Data API grants, and the `product-images` Storage bucket.
    Then run `supabase/cms-schema.sql` for the business CMS: clients, orders, payments, expenses, push subscriptions, and the private `order-images` and `backups` buckets.
-   Then run `supabase/shop-schema.sql` for the shop ledger: counter sales and shop invoices. It reuses helpers created by the two files above, so run it last.
+   Then run `supabase/shop-schema.sql` for the shop ledger: counter sales, shop invoices and shop expenses. It reuses helpers created by the two files above, so run it last. Both CMS files are additive and safe to re-run on an existing database.
 3. Copy the project URL and publishable key into `.env.local` as `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`.
 4. Keep public email signups disabled in Supabase Auth.
 5. Create the owner account in Authentication, then assign this account the admin role in its `app_metadata`:
@@ -40,27 +40,32 @@ The public catalogue works without Supabase, but products stay empty and enquiry
 
 Only `app_metadata` is trusted for authorization. Never put an admin role in user-editable metadata and never expose a secret or service-role key to the browser.
 
-The product catalogue tool is at `/studio`; public products appear only when their `published` switch is enabled. The factory CMS is at `/cms` and the shop ledger at `/shop`.
+The product catalogue tool is at `/studio`; public products appear only when their `published` switch is enabled. The factory system is at `/factory` and the shop ledger at `/shop`.
 
 ## Shop ledger (`/shop`)
 
-The showroom's own book, separate from the factory orders in `/cms`. Same admin
+The showroom's own book, separate from the factory orders in `/factory`. Same admin
 login.
 
-- **A sale** stores three figures: the purchase price, the profit margin
-  (40% by default) and any discount given in rupees. Marked price, sale and
-  profit are calculated, never stored — Rs 10,000 at 40% is marked Rs 14,000,
-  less a Rs 500 discount sells for Rs 13,500 at Rs 3,500 profit.
+- **Invoices come first.** Save an invoice and every line is drafted into
+  Sales with its billed price. Each draft needs only the purchase price; enter
+  it in the ledger and profit and margin appear. A draft counts towards sales
+  but not profit until then, so the partner split is never flattered by stock
+  whose cost is unknown.
+- **Invoices** are headed PAK TRIBAL FURNITURE and take a typed customer name,
+  so a counter sale needs no client record. **Discount is a percentage** of the
+  line subtotal, spread across the lines at the same rate.
+- **A manual sale** is for stock sold without an invoice: enter the purchase
+  price, the margin (40% by default) and a discount percentage. Rs 10,000 at
+  40% is marked Rs 14,000; 5% off sells it for Rs 13,300 at Rs 3,300 profit.
 - **A return** keeps its row and drops out of both sales and profit. Undo it
   from the same row if the customer changes their mind.
-- **Calculate expense** deducts the CMS expenses (general expenses plus paid
-  labour) from gross profit, then splits the net between the two partners at
-  30% and 70%. Without it, the tiles show gross profit.
-- **Invoices** are headed PAK TRIBAL FURNITURE and take a typed customer name,
-  so a counter sale needs no client record. Pull a line straight from the
-  ledger with **Add from the shop ledger**, or type items by hand.
+- **Expenses** are the shop's own — rent, labour, transport. **Calculate
+  expense** deducts them from gross profit and splits the net between the two
+  partners at 30% and 70%. The factory's expenses in `/factory` are a separate
+  book and are never counted here.
 
-## Business CMS (`/cms`)
+## Factory (`/factory`)
 
 Clients, production orders, invoices, available business funds and workshop
 expenses. Same admin login as Studio. The whole site stays in white/light mode.
@@ -109,11 +114,11 @@ lists what is due regardless.
    bypasses row-level security and is read by `src/lib/supabase/admin.ts` alone.
 3. Deploy to Vercel. `vercel.json` schedules two jobs: due-date reminders daily
    at 09:00 PKT, and a data export every Sunday.
-4. Open `/cms/settings` on the phone you want notified and turn notifications on.
+4. Open `/factory/settings` on the phone you want notified and turn notifications on.
 
 **On iPhone, notifications only work once the site is added to the Home Screen**
 (iOS 16.4+). In a plain Safari tab, `PushManager` does not exist. Android and
-desktop Chrome work from a normal tab. `/cms/settings` detects this and shows
+desktop Chrome work from a normal tab. `/factory/settings` detects this and shows
 the Add to Home Screen instruction.
 
 Test the reminder without waiting for the schedule:
@@ -128,7 +133,7 @@ Three layers, and only the first survives losing the Supabase project itself:
 
 1. **Supabase point-in-time recovery** — a paid feature, off by default. Turn it
    on once real orders are in. This is a billing decision, not code.
-2. **Download a copy of everything** in `/cms/settings` — one JSON file of every
+2. **Download a copy of everything** in `/factory/settings` — one JSON file of every
    client, order (including items), invoice, balance, labour entry, expense and
    legacy payment. The version 2 export paginates all tables without a row cap.
 3. **Weekly automated export** to the private `backups` bucket, last 12 kept.

@@ -166,6 +166,8 @@ using (bucket_id = 'backups' and coalesce((select auth.jwt() -> 'app_metadata' -
 begin;
 
 alter table public.orders add column if not exists items jsonb not null default '[]'::jsonb;
+-- Urgent orders carry a red mark through the orders tree. Existing rows are not urgent.
+alter table public.orders add column if not exists urgent boolean not null default false;
 alter table public.orders drop constraint if exists orders_status_check;
 alter table public.orders add constraint orders_status_check
   check (status in ('pending', 'in_progress', 'ready', 'completed', 'delivered', 'cancelled'));
@@ -258,6 +260,24 @@ create table if not exists public.invoices (
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+-- Labour payslip inputs. Total is computed from these by labourTotals() in
+-- src/lib/accounting-core.ts and written by the one save path, so the sheet
+-- cannot show a total that disagrees with the salary and hours behind it.
+alter table public.labour_entries add column if not exists per_day_salary bigint not null default 0
+  check (per_day_salary between 0 and 999999999999);
+alter table public.labour_entries add column if not exists ot_hours integer not null default 0
+  check (ot_hours between 0 and 1000);
+alter table public.labour_entries add column if not exists ot_rate bigint not null default 0
+  check (ot_rate between 0 and 999999999999);
+alter table public.labour_entries add column if not exists deduction bigint not null default 0
+  check (deduction between 0 and 999999999999);
+-- Deductions can now exceed earnings, and what has been paid can exceed a
+-- reduced total, so both of the original guards on total_amount are wrong.
+alter table public.labour_entries drop constraint if exists labour_entries_check;
+alter table public.labour_entries drop constraint if exists labour_entries_total_amount_check;
+alter table public.labour_entries add constraint labour_entries_total_amount_check
+  check (total_amount between -999999999999 and 999999999999);
 
 create index if not exists balance_entries_date_idx on public.balance_entries (received_on desc, id);
 create index if not exists labour_entries_period_idx on public.labour_entries (period, name, id);

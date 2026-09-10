@@ -6,7 +6,7 @@ import { addDays, monthRange, today } from "@/lib/cms-core";
 import { readAll } from "@/lib/cms-read";
 import { availableCredit } from "@/lib/accounting-core";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import type { Client, Database, Expense, Order, Invoice, BalanceEntry, LabourEntry, ShopSale, ShopInvoice } from "@/types/database";
+import type { Client, Database, Expense, Order, Invoice, BalanceEntry, LabourEntry, ShopSale, ShopInvoice, ShopExpense } from "@/types/database";
 
 export async function getCmsSession(): Promise<{ supabase: SupabaseClient<Database>; userId: string } | null> {
   const supabase = await createSupabaseServerClient();
@@ -124,6 +124,14 @@ export async function getShopSales(): Promise<ShopSale[]> {
   if (!supabase) return [];
   return await readAll((from, to) => supabase.from("shop_sales").select("*")
     .order("sold_on", { ascending: false }).order("sale_no", { ascending: false }).range(from, to)) ?? [];
+}
+
+/** The shop's own expenses. The factory's live in public.expenses. */
+export async function getShopExpenses(): Promise<ShopExpense[]> {
+  const supabase = await createSupabaseServerClient();
+  if (!supabase) return [];
+  return await readAll((from, to) => supabase.from("shop_expenses").select("*")
+    .order("spent_on", { ascending: false }).order("id").range(from, to)) ?? [];
 }
 
 export async function getShopInvoices(): Promise<ShopInvoice[]> {

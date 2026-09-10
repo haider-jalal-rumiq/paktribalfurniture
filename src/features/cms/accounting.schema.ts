@@ -31,18 +31,24 @@ export const invoiceInputSchema = z.object({
   return total > 0n && total <= BigInt(MAX_AMOUNT);
 }, { message: "The invoice total must be between Rs 1 and Rs 999,999,999,999", path: ["items"] });
 
+/**
+ * A payslip's inputs. Total payable and balance are computed by labourTotals(),
+ * never typed — so advance and salary paid are no longer checked against the
+ * total here: a deduction can legitimately drop the total below what was
+ * already handed over, and the sheet shows that as a negative balance.
+ */
 export const labourInputSchema = z.object({
   id: z.uuid(),
   name: z.string().trim().min(2, "Enter the worker's name").max(140),
   period: z.string().regex(/^(19|[2-9]\d)\d{2}-(0[1-9]|1[0-2])$/, "Choose the salary month"),
   paidOn: dateField("Enter a valid payment date"),
   salary: amountField("Enter the salary in whole rupees", { allowZero: true }),
-  totalAmount: amountField("Enter the agreed total in whole rupees", { allowZero: true }),
+  perDaySalary: amountField("Enter the per-day salary in whole rupees", { allowZero: true }),
+  otHours: z.coerce.number().int().min(0, "Overtime cannot be negative").max(1000, "That is too many hours"),
+  otRate: amountField("Enter the overtime rate per hour in whole rupees", { allowZero: true }),
+  deduction: amountField("Enter any other deduction in whole rupees", { allowZero: true }),
   advance: amountField("Enter the advance in whole rupees", { allowZero: true }),
   salaryPaid: amountField("Enter salary paid in whole rupees", { allowZero: true }),
   leaves: z.coerce.number().int().min(0).max(31),
   notes: optionalText(1000),
-}).refine((value) => [value.advance, value.salaryPaid, value.totalAmount].every(Number.isSafeInteger)
-  && BigInt(value.advance) + BigInt(value.salaryPaid) <= BigInt(value.totalAmount), {
-  message: "Advance plus salary paid cannot exceed the agreed total", path: ["advance"],
 });

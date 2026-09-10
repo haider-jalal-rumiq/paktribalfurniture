@@ -7,7 +7,7 @@ import { FormSection, StickyActions } from "@/components/cms/cms-page";
 import { Button } from "@/components/ui/button";
 import { Field, Input, Select, Textarea } from "@/components/ui/field";
 import { shopInvoiceInputSchema } from "@/features/shop/shop.schema";
-import { invoiceTotal, shopSaleAmounts } from "@/lib/accounting-core";
+import { invoiceDiscount, invoiceTotal, shopSaleAmounts } from "@/lib/accounting-core";
 import { today } from "@/lib/cms-core";
 import { formatPkr, parseAmount } from "@/lib/money";
 import { submitRequest } from "@/lib/submit";
@@ -21,13 +21,17 @@ export function ShopInvoiceForm({ stock }: { stock: ShopSale[] }) {
   const router = useRouter();
   const requestId = useRef("");
   const [items, setItems] = useState<DraftItem[]>([]);
+  const [discount, setDiscount] = useState("0");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState("");
 
   const amounts = items.map((row) => ({ amount: parseAmount(row.amount), quantity: Number(row.quantity) }));
   const valid = amounts.every((row) => row.amount !== null && Number.isInteger(row.quantity) && row.quantity > 0 && row.quantity <= 10000);
-  const total = valid ? invoiceTotal(amounts as { amount: number; quantity: number }[]) : null;
+  const discountPct = Number(discount);
+  const discountValid = Number.isInteger(discountPct) && discountPct >= 0 && discountPct <= 100;
+  const subtotal = valid ? invoiceTotal(amounts as { amount: number; quantity: number }[]) : null;
+  const billed = subtotal !== null && discountValid ? invoiceDiscount(subtotal, discountPct) : null;
 
   function update(id: string, patch: Partial<DraftItem>) {
     setItems((rows) => rows.map((row) => (row.id === id ? { ...row, ...patch } : row)));
@@ -39,7 +43,7 @@ export function ShopInvoiceForm({ stock }: { stock: ShopSale[] }) {
     if (!sale) return;
     setItems((rows) => [...rows, {
       id: crypto.randomUUID(), item: sale.name, quantity: "1",
-      amount: String(shopSaleAmounts(sale).sale), source: `Sale #${sale.sale_no}`,
+      amount: String(shopSaleAmounts(sale).unit), source: `Sale #${sale.sale_no}`,
     }]);
   }
 
@@ -70,6 +74,9 @@ export function ShopInvoiceForm({ stock }: { stock: ShopSale[] }) {
         <Field label="Phone" htmlFor="customerPhone"><Input id="customerPhone" name="customerPhone" type="tel" maxLength={30} placeholder="Optional" /></Field>
         <Field label="Address" htmlFor="customerAddress"><Input id="customerAddress" name="customerAddress" maxLength={400} placeholder="Optional" /></Field>
         <Field label="Invoice date" htmlFor="issuedOn"><Input id="issuedOn" name="issuedOn" type="date" defaultValue={today()} required /></Field>
+        <Field label="Discount (%)" htmlFor="invoiceDiscountPct" hint={billed && billed.discount > 0n ? `Less ${formatPkr(billed.discount)}` : "Percent off the line subtotal."}>
+          <Input id="invoiceDiscountPct" name="discountPct" type="number" min={0} max={100} step={1} value={discount} onChange={(event) => setDiscount(event.target.value)} required />
+        </Field>
       </FormSection>
 
       <FormSection title="Items" hint="Enter the amount per unit. The total includes quantity.">
@@ -105,10 +112,20 @@ export function ShopInvoiceForm({ stock }: { stock: ShopSale[] }) {
             )}
           </div>
 
-          <div className="flex flex-wrap items-baseline justify-between gap-3 border-t border-hairline pt-4">
-            <span className="font-semibold text-ink-soft">Total amount</span>
-            <output className="break-all text-xl font-bold tabular-nums text-accent">{total !== null ? formatPkr(total) : "Enter valid amounts"}</output>
-          </div>
+          <dl className="space-y-2 border-t border-hairline pt-4 text-sm">
+            <div className="flex flex-wrap items-baseline justify-between gap-3">
+              <dt className="text-muted">Subtotal</dt>
+              <dd className="break-all tabular-nums">{subtotal !== null ? formatPkr(subtotal) : "—"}</dd>
+            </div>
+            <div className="flex flex-wrap items-baseline justify-between gap-3">
+              <dt className="text-muted">Discount {discountValid ? `${discountPct}%` : ""}</dt>
+              <dd className="break-all tabular-nums">{billed ? `− ${formatPkr(billed.discount)}` : "—"}</dd>
+            </div>
+            <div className="flex flex-wrap items-baseline justify-between gap-3 border-t border-hairline pt-2">
+              <dt className="font-semibold text-ink-soft">Total amount</dt>
+              <dd className="break-all text-xl font-bold tabular-nums text-accent">{billed ? formatPkr(billed.total) : "Enter valid amounts"}</dd>
+            </div>
+          </dl>
         </div>
       </FormSection>
 
@@ -116,6 +133,7 @@ export function ShopInvoiceForm({ stock }: { stock: ShopSale[] }) {
         <Field label="Invoice note" htmlFor="shopNotes" className="sm:col-span-2"><Textarea id="shopNotes" name="notes" maxLength={2000} /></Field>
       </FormSection>
 
+      <p className="text-sm text-muted">Saving also drafts one row per item into Sales, where you add the purchase price.</p>
       {error && <p role="alert" className="text-sm text-accent-deep">{error}</p>}
       <StickyActions>
         <Button type="submit" disabled={saving || saved}>{saved ? "Saved — opening" : saving ? "Saving…" : "Save invoice"}</Button>

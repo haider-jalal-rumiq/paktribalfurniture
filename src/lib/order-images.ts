@@ -118,6 +118,7 @@ export function orderRecord(input: OrderInput, imagePaths: string[]) {
     order_date: input.orderDate,
     expected_date: orNull(input.expectedDate),
     status: input.status,
+    urgent: input.urgent,
     image_paths: imagePaths,
     notes: orNull(input.notes),
   };

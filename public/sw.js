@@ -23,14 +23,14 @@ self.addEventListener("push", (event) => {
       badge: "/icons/icon-192.png",
       tag: payload.tag || "ptf-orders",
       renotify: true,
-      data: { url: payload.url || "/cms" },
+      data: { url: payload.url || "/factory" },
     }),
   );
 });
 
 self.addEventListener("notificationclick", (event) => {
   event.notification.close();
-  const target = new URL(event.notification.data?.url || "/cms", self.location.origin).href;
+  const target = new URL(event.notification.data?.url || "/factory", self.location.origin).href;
 
   event.waitUntil(
     self.clients.matchAll({ type: "window", includeUncontrolled: true }).then((clientList) => {

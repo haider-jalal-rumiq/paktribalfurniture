@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { Check, LoaderCircle, Save, Trash2 } from "lucide-react";
+import { Check, LoaderCircle, Save, Trash2, TriangleAlert } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -62,7 +62,7 @@ export function OrderForm({
     // and a spinner that never resolves reads as "it failed" — which is how the
     // same order ends up entered twice.
     setSaved(true);
-    router.push(`/cms/orders/${result.id}`);
+    router.push(`/factory/orders/${result.id}`);
     router.refresh();
   }
 
@@ -82,7 +82,7 @@ export function OrderForm({
       return;
     }
 
-    router.push("/cms/orders");
+    router.push("/factory/orders");
     router.refresh();
   }
 
@@ -162,6 +162,28 @@ export function OrderForm({
         <Field label="Expected delivery" htmlFor="expectedDate" hint="Drives the reminder two days before">
           <Input id="expectedDate" name="expectedDate" type="date" defaultValue={order?.expected_date ?? ""} />
         </Field>
+
+        {/* A native checkbox, styled as a switch. The whole row is the target so
+            it is thumb-friendly; `has-[:checked]` turns the row red so the state
+            is obvious without reading the box. */}
+        <label className="flex min-h-14 cursor-pointer items-center gap-3 rounded-[var(--radius-ui)] border border-hairline px-4 py-3 transition-colors has-[:checked]:border-accent has-[:checked]:bg-accent/8 sm:col-span-2">
+          <input
+            type="checkbox"
+            name="urgent"
+            defaultChecked={order?.urgent ?? false}
+            className="peer h-5 w-5 shrink-0 accent-accent"
+          />
+          <span className="min-w-0 flex-1">
+            <span className="block text-sm font-semibold text-ink-soft">Urgent order</span>
+            <span className="mt-0.5 block text-xs text-muted">
+              Marks this order red in the orders list, and counts on the client row.
+            </span>
+          </span>
+          <TriangleAlert
+            className="h-5 w-5 shrink-0 text-hairline peer-checked:text-accent"
+            aria-hidden="true"
+          />
+        </label>
       </FormSection>
 
       <FormSection title="Delivery">

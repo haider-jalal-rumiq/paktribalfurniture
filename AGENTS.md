@@ -25,8 +25,8 @@ delete it.
 |---|---|---|---|
 | **Site** | `/`, `/collections`, `/custom`, `/contact`, `/privacy` | public | catalogue + WhatsApp enquiry handoff |
 | **Studio** | `/studio` | admin | the product catalogue |
-| **CMS** | `/cms` | admin | the *factory*: clients, orders, invoices, balances, labour, expenses |
-| **Shop** | `/shop` | admin | the *showroom*: counter sales, profit split, shop invoices |
+| **Factory** | `/factory` | admin | the *factory*: clients, orders, invoices, balances, labour, expenses |
+| **Shop** | `/shop` | admin | the *showroom*: counter sales, invoices, expenses, profit split |
 
 All admin areas use the **same** Supabase email+password login and the same
 claim: `app_metadata.role === "admin"`. `src/lib/supabase/proxy.ts` holds one
@@ -44,7 +44,7 @@ There is no `middleware.ts`.
 legacy expense category labels, the two printed trading names, and the
 partner profit shares. New expense categories are free text.
 
-**Two brands print from one component.** `/cms` invoices are headed WOODONA
+**Two brands print from one component.** `/factory` invoices are headed WOODONA
 HERITAGE (the factory), `/shop` invoices PAK TRIBAL FURNITURE (the showroom).
 Both go through `InvoiceDocument` with a `brand` prop; never fork the document.
 
@@ -108,10 +108,10 @@ the JS variants and the CSS block in `globals.css` neutralises keyframes.
 ```
 src/
   app/           routes only — no business logic
-    cms/         the factory order system (admin)
+    factory/     the factory order system (admin)
     shop/        the showroom sales ledger (admin)
     studio/      the product catalogue (admin)
-    api/cms/*    CMS writes, each guarded by getCmsSession()
+    api/factory/*    CMS writes, each guarded by getCmsSession()
     api/shop/*   shop writes, likewise guarded by getCmsSession()
     api/cron/*   scheduled jobs, guarded by CRON_SECRET — the ONLY
                  place allowed to import lib/supabase/admin.ts
@@ -121,7 +121,7 @@ src/
     cms/         cms-page, cms-nav, record-list, stat-card
     motion/      the shared animation primitives
   features/
-    auth/        admin login + sign out, shared by /studio and /cms
+    auth/        admin login + sign out, shared by /studio, /factory and /shop
     cms/         schemas + forms for client, order, invoice, balance, labour, expense
     shop/        schemas + forms for a counter sale and a shop invoice
     inquiry/     public enquiry form (WhatsApp handoff, not booking)
@@ -130,6 +130,7 @@ src/
   lib/
     cms-core.ts  pure logic: balances, PK dates, month ranges (no Supabase)
     cms.ts       "server-only" reads; re-exports cms-core
+    accounting-core.ts  pure money logic: shop rows, invoice discount, payslips
     money.ts     whole-rupee formatting and parsing
     supabase/    client · server · proxy · admin (service role, cron only)
 ```
@@ -144,12 +145,26 @@ src/
 - **Balances are derived, never stored.** Credit is added balances minus expenses
   and paid labour. Invoices alone determine sales and do not increase Credit.
   Legacy `order_payments` stay in backups; active orders have no payments.
-- **A shop sale stores only cost, margin % and discount.** Marked price, sale
-  and profit come from `shopSaleAmounts()` in `lib/accounting-core.ts`; the
-  `shop_sales_sale_not_negative` CHECK repeats its integer rounding so the two
-  can never disagree. A returned item keeps its row and leaves the totals.
-  Shop net profit deducts the *CMS* expenses (general + paid labour), on
-  purpose — the owner runs both books out of one pocket.
+- **The two books are separate.** Shop net profit deducts `shop_expenses`
+  only. The factory's `expenses` and `labour_entries` never touch it.
+- **A shop sale row stores `sale_price` per unit, and that is the truth.**
+  Saving a shop invoice drafts one row per line with the price from the
+  invoice; `cost` stays null until the purchase price is entered, and a draft
+  counts towards sales but *not* profit — otherwise an unpriced item would
+  read as pure profit. A manual row has its price computed by
+  `manualSalePrice()` before saving, with `margin_pct`/`discount_pct` kept
+  beside it only as a record of how the price was reached. Margin shown in
+  the ledger is always derived by `achievedMarginPct()`. A returned item keeps
+  its row and leaves the totals.
+- **Discounts are percentages, never rupees** — on the shop invoice
+  (`discount_pct`, applied to the line subtotal by the generated column via
+  `cms_shop_invoice_total()`) and on a manual sale row. `invoiceDiscount()`
+  mirrors the SQL rounding.
+- **A labour payslip is computed, not typed.** `labourTotals()` turns salary,
+  per-day salary, leaves, OT hours, OT rate and deduction into total payable
+  and balance. `lib/labour-write.ts` is the only writer of
+  `labour_entries.total_amount`, and it uses that same function. Totals may go
+  negative when deductions exceed earnings — that is shown, not clamped.
 - **"Today" means today in Pakistan.** Use `today()` from `lib/cms-core.ts`, not
   `new Date()` — the server runs in UTC and would roll the date at 5am PKT.
 - Anything on a *public* page derived from "now" must be read on the client;
@@ -185,7 +200,7 @@ src/
   `src/lib/supabase/admin.ts` alone, imported only by `src/app/api/cron/*`, and
   never prefixed `NEXT_PUBLIC_`. `grep -r SERVICE_ROLE src/` must match one file.
 - `public/sw.js` has **no fetch handler** on purpose. Caching an authenticated
-  CMS serves stale orders and cached auth pages.
+  admin app serves stale orders and cached auth pages.
 
 ---
 

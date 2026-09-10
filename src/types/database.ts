@@ -11,6 +11,7 @@ export type InvoiceItem = { id: string; item: string; quantity: number; amount: 
 export type BalanceEntry = { id: string; received_on: string; amount: number; note: string; created_at: string };
 export type LabourEntry = {
   id: string; name: string; period: string; paid_on: string; salary: number;
+  per_day_salary: number; ot_hours: number; ot_rate: number; deduction: number;
   total_amount: number; advance: number; salary_paid: number; leaves: number;
   notes: string | null; created_at: string; updated_at: string;
 };
@@ -21,13 +22,24 @@ export type Invoice = {
   status: "issued" | "void"; created_at: string; updated_at: string;
 };
 export type ShopSale = {
-  id: string; sale_no: number; sold_on: string; name: string; cost: number;
-  margin_pct: number; discount: number; returned_on: string | null; note: string | null;
+  id: string; sale_no: number; sold_on: string; name: string;
+  quantity: number; sale_price: number;
+  /** Null while the row is a draft awaiting its purchase price. */
+  cost: number | null;
+  /** How a manual row was priced. Null on invoice-drafted rows. */
+  margin_pct: number | null; discount_pct: number | null;
+  invoice_id: string | null; returned_on: string | null; note: string | null;
   created_at: string; updated_at: string;
+};
+export type ShopExpense = {
+  id: string; spent_on: string; category: string; amount: number;
+  note: string | null; created_at: string;
 };
 export type ShopInvoice = {
   id: string; invoice_no: number; customer_name: string; customer_phone: string | null;
   customer_address: string | null; issued_on: string; items: InvoiceItem[];
+  discount_pct: number;
+  /** Generated in SQL: line subtotal less the discount percentage. */
   total_amount: number; notes: string | null; status: "issued" | "void";
   created_at: string; updated_at: string;
 };
@@ -39,7 +51,8 @@ export interface Database {
   public: {
     Tables: {
       balance_entries: TableShape<BalanceEntry, "amount" | "note">;
-      shop_sales: TableShape<ShopSale, "name" | "cost">;
+      shop_sales: TableShape<ShopSale, "name" | "sale_price">;
+      shop_expenses: TableShape<ShopExpense, "category" | "amount">;
       shop_invoices: {
         Row: ShopInvoice;
         Insert: Omit<Partial<ShopInvoice>, "total_amount"> & Pick<ShopInvoice, "customer_name" | "items">;
@@ -193,6 +206,7 @@ export interface Database {
           order_date: string;
           expected_date: string | null;
           status: string;
+          urgent: boolean;
           image_paths: string[];
           notes: string | null;
           reminder_sent_at: string | null;
@@ -213,6 +227,7 @@ export interface Database {
           order_date?: string;
           expected_date?: string | null;
           status?: string;
+          urgent?: boolean;
           image_paths?: string[];
           notes?: string | null;
           reminder_sent_at?: string | null;
@@ -231,6 +246,7 @@ export interface Database {
           order_date?: string;
           expected_date?: string | null;
           status?: string;
+          urgent?: boolean;
           image_paths?: string[];
           notes?: string | null;
           reminder_sent_at?: string | null;

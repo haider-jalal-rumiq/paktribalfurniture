@@ -10,7 +10,7 @@ import type { Database } from "@/types/database";
  */
 const PROTECTED_AREAS = [
   { base: "/studio", login: "/studio/login" },
-  { base: "/cms", login: "/cms/login" },
+  { base: "/factory", login: "/factory/login" },
   { base: "/shop", login: "/shop/login" },
 ] as const;
 
@@ -25,10 +25,10 @@ export async function updateSession(request: NextRequest): Promise<NextResponse>
   const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
   const { pathname } = request.nextUrl;
 
-  // App Router paths are case sensitive, so /CMS would 404. Send it to the
+  // App Router paths are case sensitive, so /FACTORY would 404. Send it to the
   // canonical lowercase route. Doing it here rather than in next.config.ts
-  // matters: redirect `source` matching is case INSENSITIVE, so a "/CMS" rule
-  // there also catches "/cms" and loops forever.
+  // matters: redirect `source` matching is case INSENSITIVE, so a "/FACTORY"
+  // rule there also catches "/factory" and loops forever.
   const lowercased = pathname.toLowerCase();
   if (pathname !== lowercased && areaFor(lowercased)) {
     const canonical = request.nextUrl.clone();

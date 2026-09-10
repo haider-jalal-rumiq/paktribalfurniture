@@ -66,7 +66,7 @@ export async function GET(request: Request) {
   const result = await sendPush(supabase, subscriptions ?? [], {
     title: rows.length === 1 ? "1 order due in 2 days" : `${rows.length} orders due in 2 days`,
     body,
-    url: "/cms",
+    url: "/factory",
     tag: `due-${dueOn}`,
   });
 

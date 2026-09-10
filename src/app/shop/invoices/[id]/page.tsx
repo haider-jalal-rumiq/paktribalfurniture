@@ -31,6 +31,7 @@ export default async function ShopInvoicePage({ params }: { params: Promise<{ id
           client_phone: invoice.customer_phone,
           issued_on: invoice.issued_on,
           items: invoice.items,
+          discount_pct: invoice.discount_pct,
           total_amount: invoice.total_amount,
           notes: invoice.notes,
           status: invoice.status,

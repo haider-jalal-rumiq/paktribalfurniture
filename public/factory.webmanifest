@@ -1,0 +1,22 @@
+{
+  "name": "Pak Tribal Furniture — Factory",
+  "short_name": "PTF Factory",
+  "description": "Clients, orders, payments and workshop expenses for Pak Tribal Furniture.",
+  "id": "/factory",
+  "start_url": "/factory",
+  "scope": "/factory",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
+  "categories": ["business", "productivity"],
+  "icons": [
+    { "src": "/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icons/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "New order", "url": "/factory/orders/new" },
+    { "name": "Add expense", "url": "/factory/expenses" }
+  ]
+}

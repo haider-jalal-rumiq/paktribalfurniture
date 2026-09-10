@@ -1,5 +1,6 @@
 import { orNull } from "@/features/cms/fields";
 import { shopSaleInputSchema } from "@/features/shop/shop.schema";
+import { manualSalePrice } from "@/lib/accounting-core";
 import { getCmsSession } from "@/lib/cms";
 
 export async function POST(request: Request) {
@@ -11,13 +12,16 @@ export async function POST(request: Request) {
     return Response.json({ message: parsed.error.issues[0]?.message ?? "Check the sale." }, { status: 400 });
   }
 
+  const input = parsed.data;
   const { data, error } = await session.supabase.from("shop_sales").insert({
-    sold_on: parsed.data.soldOn,
-    name: parsed.data.name,
-    cost: parsed.data.cost,
-    margin_pct: parsed.data.marginPct,
-    discount: parsed.data.discount,
-    note: orNull(parsed.data.note),
+    sold_on: input.soldOn,
+    name: input.name,
+    quantity: input.quantity,
+    sale_price: Number(manualSalePrice(input.cost, input.marginPct, input.discountPct).salePrice),
+    cost: input.cost,
+    margin_pct: input.marginPct,
+    discount_pct: input.discountPct,
+    note: orNull(input.note),
   }).select("id").single();
 
   if (error) {

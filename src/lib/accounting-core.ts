@@ -7,11 +7,6 @@ export function invoiceTotal(items: readonly { amount: number; quantity: number 
   return items.reduce((sum, item) => sum + BigInt(item.amount) * BigInt(item.quantity), 0n);
 }
 
-export function labourAmounts(entry: { total_amount: number; advance: number; salary_paid: number }) {
-  const paid = BigInt(entry.advance) + BigInt(entry.salary_paid);
-  return { paid, balance: BigInt(entry.total_amount) - paid };
-}
-
 export function availableCredit(added: bigint, expenses: bigint, labourPaid: bigint): bigint {
   return added - expenses - labourPaid;
 }
@@ -22,36 +17,87 @@ export const showDate = (value: string): string =>
 export const invoiceNumber = (number: number): string => `PTF-${String(number).padStart(4, "0")}`;
 
 /**
- * Shop counter sale. Cost is what the shop paid; the marked price adds the
- * margin; the discount comes off the marked price.
- *   10,000 cost + 40% -> 14,000 marked - 500 discount = 13,500 sale, 3,500 profit
- * Integer arithmetic throughout, mirrored by shop_sales_discount_check in
- * supabase/shop-schema.sql so the database can never hold a negative sale.
+ * A shop sale row. `sale_price` is per unit and is the truth: for an
+ * invoice-drafted row it comes from the invoice, for a manual row the form
+ * computed it with manualSalePrice() before saving. `cost` is null while the
+ * row is still a draft, so profit is unknown rather than zero.
  */
-export function shopSaleAmounts(sale: { cost: number; margin_pct: number; discount: number }) {
-  const cost = BigInt(sale.cost);
-  const marked = cost + (cost * BigInt(sale.margin_pct) + 50n) / 100n;
-  const total = marked - BigInt(sale.discount);
-  return { cost, marked, discount: BigInt(sale.discount), sale: total, profit: total - cost };
+export function shopSaleAmounts(row: { quantity: number; sale_price: number; cost: number | null }) {
+  const quantity = BigInt(row.quantity);
+  const unit = BigInt(row.sale_price);
+  const sale = unit * quantity;
+  const cost = row.cost === null ? null : BigInt(row.cost) * quantity;
+  return { quantity, unit, sale, cost, profit: cost === null ? null : sale - cost };
 }
 
-export type ShopRow = { cost: number; margin_pct: number; discount: number; returned_on: string | null };
+/**
+ * Manual pricing: add the margin to the purchase price, then take the discount
+ * off the marked price. Rs 10,000 at 40% is marked Rs 14,000; a 5% discount
+ * sells it for Rs 13,300. Integer arithmetic, mirrored by the SQL CHECK.
+ */
+export function manualSalePrice(cost: number, marginPct: number, discountPct: number) {
+  const base = BigInt(cost);
+  const marked = base + (base * BigInt(marginPct) + 50n) / 100n;
+  const discount = (marked * BigInt(discountPct) + 50n) / 100n;
+  return { marked, discount, salePrice: marked - discount };
+}
 
-/** Returned items leave sales and profit and are reported on their own line. */
+/** Margin actually achieved on a row, once the purchase price is known. */
+export function achievedMarginPct(sale: bigint, cost: bigint | null): number | null {
+  if (cost === null || cost === 0n) return null;
+  return Number(((sale - cost) * 100n) / cost);
+}
+
+export type ShopRow = {
+  quantity: number;
+  sale_price: number;
+  cost: number | null;
+  returned_on: string | null;
+};
+
+/**
+ * Returned items leave sales and profit. A draft row (no purchase price yet)
+ * counts towards sales but not profit — otherwise the split would silently
+ * treat an unpriced item as pure profit.
+ */
 export function shopTotals(rows: readonly ShopRow[]) {
-  const totals = { sold: 0, sales: 0n, profit: 0n, returned: 0, returnedSales: 0n };
+  const totals = { sold: 0, sales: 0n, profit: 0n, drafts: 0, returned: 0, returnedSales: 0n };
   for (const row of rows) {
     const { sale, profit } = shopSaleAmounts(row);
     if (row.returned_on) {
       totals.returned += 1;
       totals.returnedSales += sale;
-    } else {
-      totals.sold += 1;
-      totals.sales += sale;
-      totals.profit += profit;
+      continue;
     }
+    totals.sold += 1;
+    totals.sales += sale;
+    if (profit === null) totals.drafts += 1;
+    else totals.profit += profit;
   }
   return totals;
+}
+
+/** Invoice discount is a percentage of the line subtotal, in whole rupees. */
+export function invoiceDiscount(subtotal: bigint, discountPct: number) {
+  const discount = (subtotal * BigInt(discountPct) + 50n) / 100n;
+  return { discount, total: subtotal - discount };
+}
+
+/**
+ * Labour payslip. Everything is derived from the six inputs, so the sheet can
+ * never show a total that disagrees with the salary and hours behind it.
+ * Total may go negative when deductions exceed earnings — that is a real
+ * over-deduction and is shown rather than clamped.
+ */
+export function labourTotals(entry: {
+  salary: number; per_day_salary: number; ot_hours: number; ot_rate: number;
+  deduction: number; leaves: number; advance: number; salary_paid: number;
+}) {
+  const leaveDeduction = BigInt(entry.leaves) * BigInt(entry.per_day_salary);
+  const overtime = BigInt(entry.ot_hours) * BigInt(entry.ot_rate);
+  const total = BigInt(entry.salary) + overtime - leaveDeduction - BigInt(entry.deduction);
+  const paid = BigInt(entry.advance) + BigInt(entry.salary_paid);
+  return { leaveDeduction, overtime, total, paid, balance: total - paid };
 }
 
 /** Two partners. The minor share truncates so the pair always sums to `net`. */
