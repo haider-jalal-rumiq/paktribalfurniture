@@ -6,9 +6,38 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[];
 
+export type OrderItem = { id: string; name: string; quantity: number; status: string; notes: string };
+export type InvoiceItem = { id: string; item: string; quantity: number; amount: number; source: string };
+export type BalanceEntry = { id: string; received_on: string; amount: number; note: string; created_at: string };
+export type LabourEntry = {
+  id: string; name: string; period: string; paid_on: string; salary: number;
+  total_amount: number; advance: number; salary_paid: number; leaves: number;
+  notes: string | null; created_at: string; updated_at: string;
+};
+export type Invoice = {
+  id: string; invoice_no: number; client_id: string; client_name: string;
+  client_address: string | null; client_phone: string | null; issued_on: string;
+  items: InvoiceItem[]; total_amount: number; notes: string | null;
+  status: "issued" | "void"; created_at: string; updated_at: string;
+};
+type TableShape<Row, Required extends keyof Row> = {
+  Row: Row; Insert: Partial<Row> & Pick<Row, Required>; Update: Partial<Row>; Relationships: [];
+};
+
 export interface Database {
   public: {
     Tables: {
+      balance_entries: TableShape<BalanceEntry, "amount" | "note">;
+      labour_entries: TableShape<LabourEntry, "name" | "period" | "salary" | "total_amount">;
+      invoices: {
+        Row: Invoice;
+        Insert: Omit<Partial<Invoice>, "total_amount"> & Pick<Invoice, "client_id" | "client_name" | "items">;
+        Update: Omit<Partial<Invoice>, "total_amount" | "invoice_no">;
+        Relationships: [{
+          foreignKeyName: "invoices_client_id_fkey"; columns: ["client_id"]; isOneToOne: false;
+          referencedRelation: "clients"; referencedColumns: ["id"];
+        }];
+      };
       products: {
         Row: {
           id: string;
@@ -133,6 +162,7 @@ export interface Database {
       };
       orders: {
         Row: {
+          items: OrderItem[];
           id: string;
           order_no: number;
           client_id: string;
@@ -152,6 +182,7 @@ export interface Database {
           updated_at: string;
         };
         Insert: {
+          items?: OrderItem[];
           id?: string;
           order_no?: number;
           client_id: string;
@@ -171,6 +202,7 @@ export interface Database {
           updated_at?: string;
         };
         Update: {
+          items?: OrderItem[];
           client_id?: string;
           site_label?: string | null;
           title?: string;
@@ -293,7 +325,9 @@ export interface Database {
       };
     };
     Views: Record<string, never>;
-    Functions: Record<string, never>;
+    Functions: {
+      cms_financial_totals: { Args: Record<string, never>; Returns: Json };
+    };
     Enums: Record<string, never>;
     CompositeTypes: Record<string, never>;
   };

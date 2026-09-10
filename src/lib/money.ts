@@ -7,8 +7,8 @@ const grouped = new Intl.NumberFormat("en-PK", { maximumFractionDigits: 0 });
 
 export const MAX_AMOUNT = 999_999_999_999;
 
-export function formatPkr(rupees: number): string {
-  return `Rs ${grouped.format(Math.round(rupees))}`;
+export function formatPkr(rupees: number | bigint): string {
+  return `Rs ${grouped.format(rupees)}`;
 }
 
 /** Short form for dashboard tiles: 250000 -> "Rs 2.5 lac", 12000000 -> "Rs 1.2 cr". */

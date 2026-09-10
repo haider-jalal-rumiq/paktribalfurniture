@@ -9,8 +9,9 @@ import { FormSection, StickyActions } from "@/components/cms/cms-page";
 import { Button } from "@/components/ui/button";
 import { Field, Input, Select, Textarea } from "@/components/ui/field";
 import { orderStatuses } from "@/content/cms";
+import { OrderItemEditor } from "@/features/cms/order-items";
+import { orderInputSchema } from "@/features/cms/order.schema";
 import { today } from "@/lib/cms-core";
-import { formatPkr, parseAmount } from "@/lib/money";
 import { submitRequest } from "@/lib/submit";
 import type { Client, Order } from "@/types/database";
 
@@ -26,22 +27,28 @@ export function OrderForm({
   defaultClientId?: string;
 }) {
   const router = useRouter();
-  const [total, setTotal] = useState(order ? String(order.total_amount) : "");
+  const [items, setItems] = useState(order?.items ?? []);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [deleting, setDeleting] = useState(false);
-
-  const parsedTotal = parseAmount(total);
 
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setSaving(true);
     setError("");
 
+    const body = new FormData(event.currentTarget);
+    const checked = orderInputSchema.safeParse({ ...Object.fromEntries(body), items, existingImagePaths: body.getAll("existingImagePaths") });
+    if (!checked.success) {
+      setError(checked.error.issues[0]?.message ?? "Check the order details.");
+      setSaving(false);
+      return;
+    }
+
     const result = await submitRequest(
       order ? `/api/cms/orders/${order.id}` : "/api/cms/orders",
-      { method: order ? "PUT" : "POST", body: new FormData(event.currentTarget) },
+      { method: order ? "PUT" : "POST", body },
       "The order could not be saved.",
     );
 
@@ -127,23 +134,11 @@ export function OrderForm({
         </Field>
       </FormSection>
 
-      <FormSection title="Money and timing">
-        <Field
-          label="Order total (Rs)"
-          htmlFor="totalAmount"
-          hint={parsedTotal !== null && parsedTotal > 0 ? formatPkr(parsedTotal) : "Whole rupees"}
-        >
-          <Input
-            id="totalAmount"
-            name="totalAmount"
-            inputMode="numeric"
-            value={total}
-            onChange={(event) => setTotal(event.target.value)}
-            placeholder="250000"
-            required
-          />
-        </Field>
+      <FormSection title="Order items" hint="Each item has its own status. The overall order status is set separately.">
+        <OrderItemEditor items={items} onChange={setItems} />
+      </FormSection>
 
+      <FormSection title="Status and timing">
         <Field label="Status" htmlFor="status">
           <Select id="status" name="status" defaultValue={order?.status ?? "pending"} required>
             {orderStatuses.map((status) => (

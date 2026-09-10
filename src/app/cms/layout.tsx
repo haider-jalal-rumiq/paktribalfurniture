@@ -9,7 +9,7 @@ export const metadata: Metadata = {
   icons: { apple: "/icons/apple-touch-icon.png" },
 };
 
-export const viewport: Viewport = { themeColor: "#f3f4ef" };
+export const viewport: Viewport = { themeColor: "#ffffff", colorScheme: "light" };
 
 // Orders, balances and "today" must never be served from a build-time snapshot.
 export const dynamic = "force-dynamic";

@@ -1,41 +1,25 @@
 import "server-only";
-
 import type { SupabaseClient } from "@supabase/supabase-js";
-
+import { readAll } from "@/lib/cms-read";
 import type { Database } from "@/types/database";
 
+const TABLES = ["clients", "orders", "order_payments", "expenses", "balance_entries", "labour_entries", "invoices"] as const;
 export interface BackupBundle {
   exportedAt: string;
-  version: 1;
+  version: 2;
   clients: unknown[];
   orders: unknown[];
   order_payments: unknown[];
   expenses: unknown[];
+  balance_entries: unknown[];
+  labour_entries: unknown[];
+  invoices: unknown[];
 }
-
-/** One JSON object holding every business row. Small enough to keep in memory. */
-export async function buildBackup(
-  supabase: SupabaseClient<Database>,
-): Promise<BackupBundle | { error: string }> {
-  const [clients, orders, payments, expenses] = await Promise.all([
-    supabase.from("clients").select("*").order("created_at"),
-    supabase.from("orders").select("*").order("created_at"),
-    supabase.from("order_payments").select("*").order("created_at"),
-    supabase.from("expenses").select("*").order("created_at"),
-  ]);
-
-  const failed = [clients, orders, payments, expenses].find((result) => result.error);
-  if (failed?.error) {
-    console.error("Backup failed", { code: failed.error.code, message: failed.error.message });
-    return { error: "The export could not be built." };
-  }
-
-  return {
-    exportedAt: new Date().toISOString(),
-    version: 1,
-    clients: clients.data ?? [],
-    orders: orders.data ?? [],
-    order_payments: payments.data ?? [],
-    expenses: expenses.data ?? [],
-  };
+export async function buildBackup(supabase: SupabaseClient<Database>): Promise<BackupBundle | { error: string }> {
+  const results = await Promise.all(TABLES.map(async (table) => {
+    const rows = await readAll((from, to) => supabase.from(table).select("*").order("created_at").order("id").range(from, to));
+    return [table, rows] as const;
+  }));
+  if (results.some(([, rows]) => rows === null)) return { error: "The export could not be built. Please try again." };
+  return { exportedAt: new Date().toISOString(), version: 2, ...Object.fromEntries(results) } as BackupBundle;
 }

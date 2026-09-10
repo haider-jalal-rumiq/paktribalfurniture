@@ -55,15 +55,13 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#f3f4ef" },
-    { media: "(prefers-color-scheme: dark)", color: "#101714" },
-  ],
+  themeColor: "#ffffff",
+  colorScheme: "light",
 };
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" className={`${manrope.variable} ${cormorant.variable} antialiased`}>
+    <html lang="en" data-scroll-behavior="smooth" className={`${manrope.variable} ${cormorant.variable} antialiased`}>
       <body className="flex min-h-[100dvh] flex-col">
         <a
           href="#main"

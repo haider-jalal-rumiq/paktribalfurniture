@@ -1,6 +1,7 @@
 /**
  * Business CMS vocabulary. The SQL CHECK constraints in supabase/cms-schema.sql
- * mirror these lists by hand — change one and you must change the other.
+ * mirror fixed client/status lists by hand. Expense labels are legacy display
+ * mappings; new expense categories are user-entered text.
  */
 
 export const clientTypes = [
@@ -14,6 +15,7 @@ export const orderStatuses = [
   { value: "pending", label: "Pending" },
   { value: "in_progress", label: "In progress" },
   { value: "ready", label: "Ready" },
+  { value: "completed", label: "Completed" },
   { value: "delivered", label: "Delivered" },
   { value: "cancelled", label: "Cancelled" },
 ] as const;
@@ -44,7 +46,7 @@ export const expenseCategories = [
 export type ClientType = (typeof clientTypes)[number]["value"];
 export type OrderStatus = (typeof orderStatuses)[number]["value"];
 export type PaymentMethod = (typeof paymentMethods)[number]["value"];
-export type ExpenseCategory = (typeof expenseCategories)[number]["value"];
+export type ExpenseCategory = string;
 
 type Option = { readonly value: string; readonly label: string };
 
@@ -64,3 +66,6 @@ export const clientTypeValues: readonly string[] = clientTypes.map((type) => typ
 export const orderStatusValues: readonly string[] = orderStatuses.map((status) => status.value);
 export const paymentMethodValues: readonly string[] = paymentMethods.map((method) => method.value);
 export const expenseCategoryValues: readonly string[] = expenseCategories.map((category) => category.value);
+
+/** Legacy category labels remain readable; new expenses accept any category. */
+export const labourExpenseLabel = "Labour payments";

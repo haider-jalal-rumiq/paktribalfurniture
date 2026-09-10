@@ -1,6 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // The isolated CMS fixture run must not interrupt an existing development server.
+  distDir: process.env.PTF_CMS_VERIFY === "1" ? ".verify-cms/next" : ".next",
   images: {
     remotePatterns: [
       {

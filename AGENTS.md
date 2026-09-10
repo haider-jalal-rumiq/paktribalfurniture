@@ -25,7 +25,7 @@ delete it.
 |---|---|---|---|
 | **Site** | `/`, `/collections`, `/custom`, `/contact`, `/privacy` | public | catalogue + WhatsApp enquiry handoff |
 | **Studio** | `/studio` | admin | the product catalogue |
-| **CMS** | `/cms` | admin | clients, orders, payments, workshop expenses |
+| **CMS** | `/cms` | admin | clients, orders, invoices, balances, labour, expenses |
 
 Both admin areas use the **same** Supabase email+password login and the same
 claim: `app_metadata.role === "admin"`. `src/lib/supabase/proxy.ts` holds one
@@ -39,8 +39,8 @@ There is no `middleware.ts`.
 
 `src/content/site.ts` — name, WhatsApp number, Instagram.
 `src/content/catalog.ts` — the eight categories.
-`src/content/cms.ts` — client types, order statuses, payment methods, expense
-categories.
+`src/content/cms.ts` — client types, order statuses, legacy payment methods and
+legacy expense category labels. New expense categories are free text.
 
 **Never hardcode a phone number or a category anywhere else.** The zod schemas,
 the `<select>` options and the SQL CHECK constraints all derive from these three
@@ -71,23 +71,23 @@ raw hex.** There is no `sage`, `clay`, or `ember` — those were a different
 project.
 
 ```
---color-canvas      #f3f4ef   page background
---color-canvas-deep #e6e9e1   alternating band
---color-surface     #fbfcf8   cards
+--color-canvas      #ffffff   page background
+--color-canvas-deep #f6f7f5   alternating band
+--color-surface     #ffffff   cards
 --color-ink         #14201c   body text
 --color-ink-soft    #31423b   secondary text
 --color-muted       #66746e   muted text
 --color-accent      #963b36   CTA, links, anything urgent
 --color-accent-deep #722b28   hover, error text
 --color-hairline    #cbd2c8   borders
---color-wash        #dce3da   hover fill
+--color-wash        #eef1ec   hover fill
 ```
 
 **Type**: Cormorant Garamond (display, `font-display`) + Manrope (body). Fluid
 `clamp()` scale, `--text-xs` … `--text-5xl`. One `<h1>` per page.
 
-**Dark mode is media-query only** — `@media (prefers-color-scheme: dark)`
-overriding `:root`. No `.dark` class, no toggle.
+**Light mode only**, as requested by the owner. White canvas/surface tokens and
+`color-scheme: light`; no dark overrides or toggle.
 
 **Motion**: everything routes through `src/components/motion/index.tsx` —
 `Reveal`, `MaskReveal`, `Stagger`/`StaggerItem`, `TileReveal`, `PanelReveal`,
@@ -114,7 +114,7 @@ src/
     motion/      the shared animation primitives
   features/
     auth/        admin login + sign out, shared by /studio and /cms
-    cms/         zod schemas + forms for client, order, payment, expense
+    cms/         schemas + forms for client, order, invoice, balance, labour, expense
     inquiry/     public enquiry form (WhatsApp handoff, not booking)
     studio/      product editor
   content/       site.ts · catalog.ts · cms.ts — the sources of truth
@@ -132,8 +132,9 @@ src/
 - Filter and pagination state belongs in `searchParams`.
 - **Money is `bigint` whole rupees.** Never float, never `numeric`. Parse user
   input with `parseAmount()` — it rejects rather than coerces.
-- **Balances are derived, never stored.** `order_payments` rows are the record;
-  `orderBalance()` computes the rest.
+- **Balances are derived, never stored.** Credit is added balances minus expenses
+  and paid labour. Invoices alone determine sales and do not increase Credit.
+  Legacy `order_payments` stay in backups; active orders have no payments.
 - **"Today" means today in Pakistan.** Use `today()` from `lib/cms-core.ts`, not
   `new Date()` — the server runs in UTC and would roll the date at 5am PKT.
 - Anything on a *public* page derived from "now" must be read on the client;

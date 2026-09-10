@@ -42,6 +42,7 @@ next-env.d.ts
 
 # Verification output
 .verify/
+.verify-cms/
 
 # Leftover from local-disk node_modules workaround (Drive is not NTFS)
 node_modules.orphan/

@@ -31,7 +31,7 @@ async function settle(page) {
       await new Promise((resolve) => setTimeout(resolve, 170));
     }
     await new Promise((resolve) => setTimeout(resolve, 800));
-    window.scrollTo(0, 0);
+    window.scrollTo({ top: 0, behavior: "instant" });
   });
   await page.waitForTimeout(400);
 }

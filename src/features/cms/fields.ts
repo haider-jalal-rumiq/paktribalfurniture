@@ -25,13 +25,18 @@ export const amountField = (message: string, { allowZero = false } = {}) =>
     return parsed;
   });
 
-export const dateField = (message: string) =>
-  z.string().regex(/^\d{4}-\d{2}-\d{2}$/, message);
+export function isCalendarDate(value: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value) || value < "1900-01-01" || value > "9999-12-31") return false;
+  const date = new Date(`${value}T00:00:00Z`);
+  return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value;
+}
+
+export const dateField = (message: string) => z.string().refine(isCalendarDate, message);
 
 export const optionalDateField = () =>
   z
     .string()
-    .refine((value) => value === "" || /^\d{4}-\d{2}-\d{2}$/.test(value), "Enter a valid date")
+    .refine((value) => value === "" || isCalendarDate(value), "Enter a valid date")
     .optional()
     .or(z.literal(""));
 

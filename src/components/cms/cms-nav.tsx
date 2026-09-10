@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ClipboardList, LayoutDashboard, Settings, Users, Wallet } from "lucide-react";
+import { ClipboardList, LayoutDashboard, ReceiptText, Settings, Users, Wallet } from "lucide-react";
 import type { ComponentType } from "react";
 
 import { cn } from "@/lib/utils";
@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 const TABS = [
   { href: "/cms", label: "Home", icon: LayoutDashboard },
   { href: "/cms/orders", label: "Orders", icon: ClipboardList },
+  { href: "/cms/invoices", label: "Invoices", icon: ReceiptText },
   { href: "/cms/clients", label: "Clients", icon: Users },
   { href: "/cms/expenses", label: "Expenses", icon: Wallet },
   { href: "/cms/settings", label: "Settings", icon: Settings },
@@ -28,7 +29,7 @@ export function CmsNav() {
   const pathname = usePathname();
 
   return (
-    <>
+    <div className="cms-navigation contents">
       {/* Phone: a compact brand bar, since there is no site header here. */}
       <div className="sticky top-0 z-30 border-b border-hairline bg-canvas/90 backdrop-blur sm:hidden">
         <Link href="/cms" className="flex min-h-14 items-center gap-2.5 px-4">
@@ -49,7 +50,7 @@ export function CmsNav() {
       {/* Tablet and up: a single horizontal bar with the brand and the tabs. */}
       <nav
         aria-label="Sections"
-        className="sticky top-0 z-30 hidden border-b border-hairline bg-canvas/90 backdrop-blur sm:block"
+        className="sticky top-0 z-30 hidden overflow-x-auto border-b border-hairline bg-canvas/90 backdrop-blur sm:block"
       >
         <div className="mx-auto flex w-full max-w-[1180px] items-center gap-1 px-8">
           <Link href="/cms" className="mr-4 flex shrink-0 items-center gap-2.5">
@@ -66,7 +67,7 @@ export function CmsNav() {
                 href={tab.href}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "relative inline-flex min-h-14 items-center gap-2 px-3.5 text-sm font-semibold transition-colors",
+                  "relative inline-flex min-h-14 shrink-0 items-center gap-2 px-3 text-sm font-semibold transition-colors",
                   active ? "text-accent" : "text-ink-soft hover:text-ink",
                 )}
               >
@@ -89,7 +90,7 @@ export function CmsNav() {
         aria-label="Sections"
         className="fixed inset-x-0 bottom-0 z-30 border-t border-hairline bg-canvas/95 pb-[env(safe-area-inset-bottom)] backdrop-blur sm:hidden"
       >
-        <div className="grid grid-cols-5 px-1">
+        <div className="grid grid-cols-6 px-1">
           {TABS.map((tab) => {
             const active = isActive(pathname, tab.href);
             return (
@@ -101,7 +102,7 @@ export function CmsNav() {
               >
                 <span
                   className={cn(
-                    "flex h-8 w-14 items-center justify-center rounded-[var(--radius-pill)] transition-colors",
+                    "flex h-8 w-11 items-center justify-center rounded-[var(--radius-pill)] transition-colors",
                     active ? "bg-accent/12 text-accent" : "text-muted",
                   )}
                 >
@@ -120,6 +121,6 @@ export function CmsNav() {
           })}
         </div>
       </nav>
-    </>
+    </div>
   );
 }

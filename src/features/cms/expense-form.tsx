@@ -5,14 +5,13 @@ import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
-import { Field, Input, Select } from "@/components/ui/field";
-import { expenseCategories } from "@/content/cms";
+import { Field, Input } from "@/components/ui/field";
 import { expenseInputSchema } from "@/features/cms/expense.schema";
 import { today } from "@/lib/cms-core";
 import { formatPkr, parseAmount } from "@/lib/money";
-import { postJson, submitRequest } from "@/lib/submit";
+import { postJson } from "@/lib/submit";
 
-export function ExpenseForm({ openOrders }: { openOrders: { id: string; label: string }[] }) {
+export function ExpenseForm() {
   const router = useRouter();
   const formRef = useRef<HTMLFormElement>(null);
   const [amount, setAmount] = useState("");
@@ -53,7 +52,7 @@ export function ExpenseForm({ openOrders }: { openOrders: { id: string; label: s
 
   return (
     <form ref={formRef} onSubmit={submit} className="rounded-[var(--radius-card)] border border-hairline bg-surface p-4 shadow-[var(--shadow-card)] sm:p-5">
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Field label="Amount (Rs)" htmlFor="amount" hint={parsed ? formatPkr(parsed) : undefined}>
           <Input
             id="amount"
@@ -66,29 +65,13 @@ export function ExpenseForm({ openOrders }: { openOrders: { id: string; label: s
           />
         </Field>
         <Field label="Category" htmlFor="category">
-          <Select id="category" name="category" defaultValue="material" required>
-            {expenseCategories.map((category) => (
-              <option key={category.value} value={category.value}>
-                {category.label}
-              </option>
-            ))}
-          </Select>
+          <Input id="category" name="category" maxLength={80} placeholder="Type a category" required />
         </Field>
         <Field label="Date" htmlFor="spentOn">
           <Input id="spentOn" name="spentOn" type="date" defaultValue={today()} required />
         </Field>
         <Field label="Note" htmlFor="note">
           <Input id="note" name="note" placeholder="Optional" />
-        </Field>
-        <Field label="Against order" htmlFor="orderId" hint="Optional job costing">
-          <Select id="orderId" name="orderId" defaultValue="">
-            <option value="">Not linked</option>
-            {openOrders.map((order) => (
-              <option key={order.id} value={order.id}>
-                {order.label}
-              </option>
-            ))}
-          </Select>
         </Field>
       </div>
 
@@ -107,34 +90,5 @@ export function ExpenseForm({ openOrders }: { openOrders: { id: string; label: s
         {saving ? "Adding" : "Add expense"}
       </Button>
     </form>
-  );
-}
-
-export function DeleteExpenseButton({ expenseId }: { expenseId: string }) {
-  const router = useRouter();
-  const [busy, setBusy] = useState(false);
-
-  async function remove() {
-    if (!window.confirm("Remove this expense?")) return;
-    setBusy(true);
-    const result = await submitRequest(
-      `/api/cms/expenses/${expenseId}`,
-      { method: "DELETE" },
-      "The expense could not be removed.",
-    );
-    setBusy(false);
-    if (result.ok) router.refresh();
-    else window.alert(result.message);
-  }
-
-  return (
-    <button
-      type="button"
-      onClick={remove}
-      disabled={busy}
-      className="min-h-11 text-xs font-semibold text-muted hover:text-accent-deep disabled:opacity-50"
-    >
-      {busy ? "Removing" : "Remove"}
-    </button>
   );
 }
