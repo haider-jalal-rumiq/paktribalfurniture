@@ -1,26 +1,32 @@
 import type { ReactNode } from "react";
-import { Logo } from "@/components/layout/logo";
+import { Logo, LogoMark } from "@/components/layout/logo";
 import { site } from "@/content/site";
-import { orderStatusLabel } from "@/content/cms";
+import { invoiceBrand, orderStatusLabel } from "@/content/cms";
 import { formatPkr } from "@/lib/money";
 import { invoiceNumber, labourAmounts, showDate } from "@/lib/accounting-core";
 import { monthLabel } from "@/lib/cms-core";
 import type { OrderDetail } from "@/lib/cms";
 import type { Invoice, LabourEntry } from "@/types/database";
 
-export function Document({ title, reference, children, className = "" }: { title: string; reference?: string; children: ReactNode; className?: string }) {
+export function Document({ title, reference, children, className = "", brandName }: { title: string; reference?: string; children: ReactNode; className?: string; brandName?: string }) {
   return <article className={`ptf-document ${className}`}>
     <header className="document-header">
-      <div><Logo className="w-44 sm:w-52" /><p className="mt-3 text-xs text-muted">{site.whatsapp.display}</p></div>
+      <div>
+        {brandName ? <div className="invoice-brand-lockup">
+          <LogoMark className="invoice-brand-mark" />
+          <p className="invoice-brand-name" aria-label={brandName}><span>WOODONA</span><span>HERITAGE</span></p>
+        </div> : <Logo className="w-44 sm:w-52" />}
+        <p className="mt-3 text-xs text-muted">{site.whatsapp.display}</p>
+      </div>
       <div className="sm:text-right"><h2 className="font-display text-3xl text-accent">{title}</h2>{reference && <p className="mt-2 text-sm font-semibold tabular-nums text-ink">{reference}</p>}</div>
     </header>
     {children}
-    <footer className="document-footer"><span>{site.name}</span><span>{reference ?? title}</span></footer>
+    <footer className="document-footer"><span>{brandName ?? site.name}</span><span>{reference ?? title}</span></footer>
   </article>;
 }
 
 export function InvoiceDocument({ invoice }: { invoice: Invoice }) {
-  return <Document title={invoice.status === "void" ? "Voided invoice" : "Invoice"} reference={invoiceNumber(invoice.invoice_no)} className="invoice-document">
+  return <Document title={invoice.status === "void" ? "Voided invoice" : "Invoice"} reference={invoiceNumber(invoice.invoice_no)} className="invoice-document" brandName={invoiceBrand.name}>
     <div className="document-parties">
       <div><p className="document-label">Bill to</p><p className="mt-2 break-words text-lg font-semibold">{invoice.client_name}</p>{invoice.client_address && <p className="mt-1 whitespace-pre-wrap break-words text-sm text-ink-soft">{invoice.client_address}</p>}{invoice.client_phone && <p className="mt-1 text-sm text-ink-soft">{invoice.client_phone}</p>}</div>
       <dl className="text-sm"><dt className="document-label">Invoice date</dt><dd className="mt-2">{showDate(invoice.issued_on)}</dd><dt className="document-label mt-4">Currency</dt><dd className="mt-2">Pakistani rupees (PKR)</dd></dl>

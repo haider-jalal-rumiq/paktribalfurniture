@@ -69,3 +69,6 @@ export const expenseCategoryValues: readonly string[] = expenseCategories.map((c
 
 /** Legacy category labels remain readable; new expenses accept any category. */
 export const labourExpenseLabel = "Labour payments";
+
+/** The trading name shown on customer invoices and invoice reports. */
+export const invoiceBrand = { name: "WOODONA HERITAGE" } as const;
