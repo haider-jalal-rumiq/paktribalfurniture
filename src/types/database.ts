@@ -13,7 +13,8 @@ export type LabourEntry = {
   id: string; name: string; period: string; paid_on: string;
   pay_basis: "monthly" | "daily" | "per_item"; salary: number;
   per_day_salary: number; days_worked: number; item_count: number; item_rate: number;
-  ot_hours: number; ot_rate: number; deduction: number;
+  ot_hours: number; ot_rate: number; leave_deduction: number; deduction: number;
+  deduction_notes: string | null;
   total_amount: number; advance: number; salary_paid: number; leaves: number;
   notes: string | null; created_at: string; updated_at: string;
 };

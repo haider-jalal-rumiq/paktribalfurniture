@@ -26,6 +26,7 @@ export function LabourForm({ entry, month }: { entry?: LabourEntry; month?: stri
   const [leaves, setLeaves] = useState(money(entry?.leaves));
   const [otHours, setOtHours] = useState(money(entry?.ot_hours));
   const [otRate, setOtRate] = useState(money(entry?.ot_rate));
+  const [leaveDeduction, setLeaveDeduction] = useState(money(entry?.leave_deduction));
   const [deduction, setDeduction] = useState(money(entry?.deduction));
   const [advance, setAdvance] = useState(money(entry?.advance));
   const [paid, setPaid] = useState(money(entry?.salary_paid));
@@ -33,16 +34,17 @@ export function LabourForm({ entry, month }: { entry?: LabourEntry; month?: stri
 
   const salaryAmount = parseAmount(payBasis === "monthly" ? salary : "0");
   const perDayAmount = parseAmount(payBasis === "per_item" ? "0" : perDay);
-  const itemRateAmount = parseAmount(payBasis === "per_item" ? itemRate : "0");
+  const itemRateAmount = parseAmount(payBasis === "daily" || payBasis === "per_item" ? itemRate : "0");
   const otRateAmount = parseAmount(otRate);
+  const leaveDeductionAmount = parseAmount(payBasis === "monthly" ? leaveDeduction : "0");
   const deductionAmount = parseAmount(deduction);
   const advanceAmount = parseAmount(advance);
   const paidAmount = parseAmount(paid);
   const activeDays = Number(payBasis === "daily" ? daysWorked : 0);
-  const activeItems = Number(payBasis === "per_item" ? itemCount : 0);
+  const activeItems = Number(payBasis === "daily" || payBasis === "per_item" ? itemCount : 0);
   const activeLeaves = Number(payBasis === "monthly" ? leaves : 0);
   const overtimeHours = Number(otHours);
-  const amounts = [salaryAmount, perDayAmount, itemRateAmount, otRateAmount, deductionAmount, advanceAmount, paidAmount];
+  const amounts = [salaryAmount, perDayAmount, itemRateAmount, otRateAmount, leaveDeductionAmount, deductionAmount, advanceAmount, paidAmount];
   const counts = [activeDays, activeItems, activeLeaves, overtimeHours];
   const ready = amounts.every((value) => value !== null)
     && counts.every((value) => Number.isInteger(value) && value >= 0);
@@ -58,6 +60,7 @@ export function LabourForm({ entry, month }: { entry?: LabourEntry; month?: stri
         item_rate: itemRateAmount!,
         ot_hours: overtimeHours,
         ot_rate: otRateAmount!,
+        leave_deduction: leaveDeductionAmount!,
         deduction: deductionAmount!,
         leaves: activeLeaves,
         advance: advanceAmount!,
@@ -82,12 +85,6 @@ export function LabourForm({ entry, month }: { entry?: LabourEntry; month?: stri
     </div>
   );
 
-  const regularPayLabel = payBasis === "daily"
-    ? `Days worked (${activeDays} × ${formatPkr(perDayAmount ?? 0)})`
-    : payBasis === "per_item"
-      ? `Items completed (${activeItems} × ${formatPkr(itemRateAmount ?? 0)})`
-      : "Monthly salary";
-
   return <form onSubmit={submit} className="space-y-4">
     <FormSection title="Worker and period">
       <Field label="Worker name" htmlFor="labourName"><Input id="labourName" name="name" maxLength={140} defaultValue={entry?.name} required /></Field>
@@ -107,12 +104,12 @@ export function LabourForm({ entry, month }: { entry?: LabourEntry; month?: stri
       </fieldset>
     </FormSection>
 
-    <FormSection title="Earnings" hint="Regular pay is calculated from the selected basis. Overtime is hours times the hourly rate.">
+    <FormSection title="Earnings" hint="Daily workers can be paid for days and optional item work in the same entry. Overtime is hours times the hourly rate.">
       {payBasis === "monthly" && <>
         <Field label="Monthly salary (Rs)" htmlFor="salary">
           <Input id="salary" name="salary" inputMode="numeric" value={salary} onChange={(event) => setSalary(event.target.value)} required />
         </Field>
-        <Field label="Per-day salary (Rs)" htmlFor="perDaySalary" hint="Used to price a leave day.">
+        <Field label="Per-day salary (Rs)" htmlFor="perDaySalary" hint="Reference rate for a leave day; enter the actual leave deduction below.">
           <Input id="perDaySalary" name="perDaySalary" inputMode="numeric" value={perDay} onChange={(event) => setPerDay(event.target.value)} required />
         </Field>
         <Field label="Leaves (days)" htmlFor="leaves" hint={totals ? `Leave deduction ${formatPkr(totals.leaveDeduction)}` : "Priced at the per-day salary."}>
@@ -127,16 +124,22 @@ export function LabourForm({ entry, month }: { entry?: LabourEntry; month?: stri
         <Field label="Rate per day (Rs)" htmlFor="perDaySalary" hint={totals ? `Regular pay ${formatPkr(totals.regularPay)}` : undefined}>
           <Input id="perDaySalary" name="perDaySalary" inputMode="numeric" value={perDay} onChange={(event) => setPerDay(event.target.value)} required />
         </Field>
-        <input type="hidden" name="salary" value="0" /><input type="hidden" name="leaves" value="0" /><input type="hidden" name="itemCount" value="0" /><input type="hidden" name="itemRate" value="0" />
+        <Field label="Work per item (optional)" htmlFor="itemCount" hint="Enter 0 when there was no item-based work.">
+          <Input id="itemCount" name="itemCount" type="number" min={0} max={1000000} step={1} value={itemCount} onChange={(event) => setItemCount(event.target.value)} required />
+        </Field>
+        <Field label="Payment per item (Rs)" htmlFor="itemRate" hint={totals ? `Item payment ${formatPkr(totals.itemPay)}` : undefined}>
+          <Input id="itemRate" name="itemRate" inputMode="numeric" value={itemRate} onChange={(event) => setItemRate(event.target.value)} required />
+        </Field>
+        <input type="hidden" name="salary" value="0" /><input type="hidden" name="leaves" value="0" /><input type="hidden" name="leaveDeduction" value="0" />
       </>}
       {payBasis === "per_item" && <>
         <Field label="No. of items completed" htmlFor="itemCount">
           <Input id="itemCount" name="itemCount" type="number" min={0} max={1000000} step={1} value={itemCount} onChange={(event) => setItemCount(event.target.value)} required />
         </Field>
-        <Field label="Rate per item (Rs)" htmlFor="itemRate" hint={totals ? `Regular pay ${formatPkr(totals.regularPay)}` : undefined}>
+        <Field label="Payment per item (Rs)" htmlFor="itemRate" hint={totals ? `Regular pay ${formatPkr(totals.regularPay)}` : undefined}>
           <Input id="itemRate" name="itemRate" inputMode="numeric" value={itemRate} onChange={(event) => setItemRate(event.target.value)} required />
         </Field>
-        <input type="hidden" name="salary" value="0" /><input type="hidden" name="perDaySalary" value="0" /><input type="hidden" name="leaves" value="0" /><input type="hidden" name="daysWorked" value="0" />
+        <input type="hidden" name="salary" value="0" /><input type="hidden" name="perDaySalary" value="0" /><input type="hidden" name="leaves" value="0" /><input type="hidden" name="leaveDeduction" value="0" /><input type="hidden" name="daysWorked" value="0" />
       </>}
       <Field label="No. of overtime hours" htmlFor="otHours">
         <Input id="otHours" name="otHours" type="number" min={0} max={1000} step={1} value={otHours} onChange={(event) => setOtHours(event.target.value)} required />
@@ -147,24 +150,32 @@ export function LabourForm({ entry, month }: { entry?: LabourEntry; month?: stri
     </FormSection>
 
     <FormSection title="Deductions">
+      {payBasis === "monthly" && <Field label="Leave deduction (Rs)" htmlFor="leaveDeduction" hint="The amount to deduct for the leave days entered above.">
+        <Input id="leaveDeduction" name="leaveDeduction" inputMode="numeric" value={leaveDeduction} onChange={(event) => setLeaveDeduction(event.target.value)} required />
+      </Field>}
       <Field label="Other deduction (Rs)" htmlFor="deduction" hint="Fines, damages, advances taken elsewhere.">
         <Input id="deduction" name="deduction" inputMode="numeric" value={deduction} onChange={(event) => setDeduction(event.target.value)} required />
+      </Field>
+      <Field label="Other deduction notes" htmlFor="deductionNotes" hint="Explain what the other deduction is for." className="sm:col-span-2">
+        <Textarea id="deductionNotes" name="deductionNotes" maxLength={1000} defaultValue={entry?.deduction_notes ?? ""} />
       </Field>
     </FormSection>
 
     <FormSection title="Payments">
       <Field label="Advance paid (Rs)" htmlFor="advance"><Input id="advance" name="advance" inputMode="numeric" value={advance} onChange={(event) => setAdvance(event.target.value)} required /></Field>
       <Field label="Amount paid, excluding advance (Rs)" htmlFor="salaryPaid"><Input id="salaryPaid" name="salaryPaid" inputMode="numeric" value={paid} onChange={(event) => setPaid(event.target.value)} required /></Field>
-      <Field label="Notes" htmlFor="labourNotes" className="sm:col-span-2"><Textarea id="labourNotes" name="notes" maxLength={1000} defaultValue={entry?.notes ?? ""} /></Field>
+      <Field label="General notes" htmlFor="labourNotes" className="sm:col-span-2"><Textarea id="labourNotes" name="notes" maxLength={1000} defaultValue={entry?.notes ?? ""} /></Field>
     </FormSection>
 
     <section className="rounded-[var(--radius-card)] border border-hairline bg-canvas-deep p-4 sm:p-5">
       <h3 className="text-xs font-bold uppercase tracking-[0.14em] text-muted">Payslip</h3>
       {totals ? (
         <dl className="mt-3 space-y-2 text-sm">
-          {line(regularPayLabel, formatPkr(totals.regularPay))}
+          {payBasis === "monthly" && line("Monthly salary", formatPkr(totals.regularPay))}
+          {payBasis === "daily" && line(`Days worked (${activeDays} × ${formatPkr(perDayAmount!)})`, formatPkr(totals.dailyPay))}
+          {(payBasis === "per_item" || totals.itemPay > 0n) && line(`Items completed (${activeItems} × ${formatPkr(itemRateAmount!)})`, `${payBasis === "daily" ? "+ " : ""}${formatPkr(totals.itemPay)}`)}
           {line("Overtime", `+ ${formatPkr(totals.overtime)}`)}
-          {payBasis === "monthly" && line(`Leave deduction (${activeLeaves} × ${formatPkr(perDayAmount!)})`, `− ${formatPkr(totals.leaveDeduction)}`)}
+          {payBasis === "monthly" && line(`Leave deduction (${activeLeaves} ${activeLeaves === 1 ? "day" : "days"})`, `− ${formatPkr(totals.leaveDeduction)}`)}
           {line("Other deduction", `− ${formatPkr(deductionAmount!)}`)}
           <div className="border-t border-hairline pt-2">{line("Total payable", formatPkr(totals.total), "text-accent")}</div>
           {line("Advance + amount paid", `− ${formatPkr(totals.paid)}`)}

@@ -104,12 +104,12 @@ export function LabourDocument({ entries, month }: { entries: LabourEntry[]; mon
           {/* The working, so a printed payslip can be checked without the app. */}
           <p className="mt-1 text-xs text-muted">
             {labourPayBasisLabel(entry.pay_basis)} · {entry.pay_basis === "monthly"
-              ? `Per day ${formatPkr(entry.per_day_salary)} · ${entry.leaves} ${entry.leaves === 1 ? "leave" : "leaves"}`
+              ? `Per day ${formatPkr(entry.per_day_salary)} · ${entry.leaves} ${entry.leaves === 1 ? "leave" : "leaves"} · leave deduction ${formatPkr(entry.leave_deduction)}`
               : entry.pay_basis === "daily"
-                ? `${entry.days_worked} days @ ${formatPkr(entry.per_day_salary)}`
+                ? `${entry.days_worked} days @ ${formatPkr(entry.per_day_salary)}${entry.item_count > 0 ? ` · ${entry.item_count} items @ ${formatPkr(entry.item_rate)}` : ""}`
                 : `${entry.item_count} items @ ${formatPkr(entry.item_rate)}`}
             {entry.ot_hours > 0 ? ` · OT ${entry.ot_hours} h @ ${formatPkr(entry.ot_rate)}` : ""}
-            {entry.deduction > 0 ? ` · other ${formatPkr(entry.deduction)}` : ""}
+            {entry.deduction > 0 ? ` · other deduction ${formatPkr(entry.deduction)}${entry.deduction_notes ? ` (${entry.deduction_notes})` : ""}` : ""}
           </p>
         </td>
         <td data-label="Regular pay" className="number">{formatPkr(totals.regularPay)}</td>
@@ -125,7 +125,7 @@ export function LabourDocument({ entries, month }: { entries: LabourEntry[]; mon
       <div><dt>Total paid</dt><dd>{formatPkr(sum((row) => row.totals.paid))}</dd></div>
       <div><dt>Balance remaining</dt><dd>{formatPkr(sum((row) => row.totals.balance))}</dd></div>
     </dl>
-    <p className="mt-6 text-xs text-muted">Total payable is regular pay plus overtime, less applicable leave and other deductions. Total paid includes advance and the remaining amount paid.</p>
+    <p className="mt-6 text-xs text-muted">Total payable is day and/or item pay plus overtime, less applicable leave and other deductions. Total paid includes advance and the remaining amount paid.</p>
     {entries.some((row) => row.notes) && <section className="mt-6"><h3 className="document-label">Notes</h3>{entries.filter((row) => row.notes).map((row) => <p key={row.id} className="mt-2 whitespace-pre-wrap break-words text-sm"><strong>{row.name}:</strong> {row.notes}</p>)}</section>}
   </Document>;
 }

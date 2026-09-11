@@ -15,7 +15,8 @@ export async function saveLabour(request: Request, id?: string) {
   // displays, so the stored figure can never disagree with the inputs beside it.
   const inputs = { pay_basis: v.payBasis, salary: v.salary, per_day_salary: v.perDaySalary,
     days_worked: v.daysWorked, item_count: v.itemCount, item_rate: v.itemRate,
-    ot_hours: v.otHours, ot_rate: v.otRate, deduction: v.deduction, leaves: v.leaves,
+    ot_hours: v.otHours, ot_rate: v.otRate, leave_deduction: v.leaveDeduction,
+    deduction: v.deduction, deduction_notes: orNull(v.deductionNotes), leaves: v.leaves,
     advance: v.advance, salary_paid: v.salaryPaid };
   const record = { name: v.name, period: `${v.period}-01`, paid_on: v.paidOn, ...inputs,
     total_amount: Number(labourTotals(inputs).total), notes: orNull(v.notes) };
@@ -24,7 +25,10 @@ export async function saveLabour(request: Request, id?: string) {
     : await session.supabase.from("labour_entries").upsert({ id: v.id, ...record }, { onConflict: "id", ignoreDuplicates: true }).select("id").maybeSingle();
   if (error) {
     console.error("Could not save labour", { code: error.code, message: error.message });
-    return Response.json({ message: "The labour entry could not be saved." }, { status: 400 });
+    const message = error.code === "PGRST204"
+      ? "The labour database needs the latest update before this entry can be saved."
+      : "The labour entry could not be saved.";
+    return Response.json({ message }, { status: 400 });
   }
   if (id && !data) return Response.json({ message: "Labour entry not found." }, { status: 404 });
   return Response.json({ id: v.id }, { status: id ? 200 : 201 });
