@@ -2,6 +2,7 @@ import "server-only";
 import { invoiceInputSchema } from "@/features/cms/accounting.schema";
 import { orNull } from "@/features/cms/fields";
 import { getCmsSession } from "@/lib/cms";
+import { deductInvoicedStock } from "@/lib/inventory";
 
 export async function saveInvoice(request: Request, id?: string) {
   const session = await getCmsSession();
@@ -35,5 +36,11 @@ export async function saveInvoice(request: Request, id?: string) {
     return Response.json({ message: "The invoice could not be saved." }, { status: 400 });
   }
   if (id && !data) return Response.json({ message: "This invoice has changed. Refresh before editing." }, { status: 409 });
-  return Response.json({ id: input.id }, { status: id ? 200 : 201 });
+
+  // Stock comes out when the invoice is first raised. Editing one deliberately
+  // does not adjust stock again — a second pass would double-deduct the lines
+  // that did not change, and there is no record of what was already taken.
+  const warnings = id ? [] : await deductInvoicedStock(session.supabase, input.items);
+
+  return Response.json({ id: input.id, ...(warnings.length ? { message: warnings.join(" ") } : {}) }, { status: id ? 200 : 201 });
 }

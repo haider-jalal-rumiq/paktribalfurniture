@@ -50,6 +50,17 @@ export function daysUntil(date: string): number {
 }
 
 /** "2026-09" -> the half-open range [2026-09-01, 2026-10-01). */
+/** An order this close to its delivery date counts as urgent on its own. */
+export const URGENT_WITHIN_DAYS = 2;
+
+/**
+ * Two days out or fewer, including already overdue. Callers gate on status:
+ * a delivered order is not urgent just because its date has passed.
+ */
+export function isDueUrgently(expectedDate: string | null): boolean {
+  return expectedDate !== null && daysUntil(expectedDate) <= URGENT_WITHIN_DAYS;
+}
+
 export function monthRange(month: string): { start: string; end: string } {
   const [year, index] = month.split("-").map(Number);
   return {

@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ClipboardList, LayoutDashboard, ReceiptText, Settings, Store, Users, Wallet } from "lucide-react";
+import { Boxes, ClipboardList, LayoutDashboard, ReceiptText, Settings, Store, Users, Wallet } from "lucide-react";
 import type { ComponentType } from "react";
 
 import { cn } from "@/lib/utils";
@@ -34,6 +34,7 @@ const APPS = [
       { href: "/factory/invoices", label: "Invoices", icon: ReceiptText },
       { href: "/factory/clients", label: "Clients", icon: Users },
       { href: "/factory/expenses", label: "Expenses", icon: Wallet },
+      { href: "/factory/inventory", label: "Inventory", icon: Boxes },
       { href: "/factory/settings", label: "Settings", icon: Settings },
     ],
   },

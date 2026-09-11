@@ -5,6 +5,7 @@ import assert from "node:assert/strict";
 import { formatPkr, formatPkrShort, parseAmount } from "../src/lib/money.ts";
 import {
   addDays,
+  isDueUrgently,
   daysUntil,
   monthRange,
   orderBalance,
@@ -32,6 +33,14 @@ assert.equal(parseAmount(null), null);
 assert.equal(parseAmount(undefined), null);
 assert.equal(parseAmount(2.5), null, "non-integer number rejected");
 assert.equal(parseAmount("9".repeat(20)), null, "over the column ceiling");
+
+// Urgent by calendar: two days out or fewer, including overdue.
+assert.equal(isDueUrgently(addDays(today(), 3)), false, "three days out is not yet urgent");
+assert.equal(isDueUrgently(addDays(today(), 2)), true, "exactly two days out is urgent");
+assert.equal(isDueUrgently(addDays(today(), 1)), true, "tomorrow is urgent");
+assert.equal(isDueUrgently(today()), true, "due today is urgent");
+assert.equal(isDueUrgently(addDays(today(), -5)), true, "overdue stays urgent");
+assert.equal(isDueUrgently(null), false, "no delivery date, no calendar urgency");
 
 assert.equal(formatPkr(250000), "Rs 250,000");
 assert.equal(formatPkrShort(250000), "Rs 2.5 lac");

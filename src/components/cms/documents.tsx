@@ -50,7 +50,7 @@ export function InvoiceDocument({ invoice, brand = invoiceBrand, reference }: { 
       <thead><tr><th scope="col" aria-label="Serial number">S.No.</th><th scope="col">Item</th><th scope="col" className="number">Qty</th><th scope="col" className="number">Unit price<span className="invoice-currency"> (Rs)</span></th><th scope="col" className="number">Total price<span className="invoice-currency"> (Rs)</span></th></tr></thead>
       <tbody>{invoice.items.map((item, index) => <tr key={item.id}>
         <td className="invoice-serial">{index + 1}</td>
-        <td><span className="invoice-item-name">{item.item}</span><span className="invoice-item-source">{item.source}</span></td>
+        <td><span className="invoice-item-name">{item.item}</span><span className="invoice-item-source">{item.code ? `${item.code} · ` : ""}{item.source}</span></td>
         <td className="number">{item.quantity}</td>
         <td className="number">{formatPkr(item.amount).replace(/^Rs /, "")}</td>
         <td className="number invoice-line-total">{formatPkr(BigInt(item.amount) * BigInt(item.quantity)).replace(/^Rs /, "")}</td>
