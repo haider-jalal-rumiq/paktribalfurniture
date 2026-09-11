@@ -176,11 +176,12 @@ export async function getShopInvoice(id: string): Promise<ShopInvoice | null> {
   return data;
 }
 
-export async function getInventory(): Promise<InventoryItem[]> {
+/** Null when the read failed — most often the inventory SQL has not been run. */
+export async function getInventory(): Promise<InventoryItem[] | null> {
   const supabase = await createSupabaseServerClient();
   if (!supabase) return [];
   return await readAll((from, to) => supabase.from("inventory_items").select("*")
-    .order("item_no").range(from, to)) ?? [];
+    .order("item_no").range(from, to));
 }
 
 export async function getInventoryItem(id: string): Promise<InventoryItem | null> {

@@ -1,7 +1,7 @@
 import { orNull } from "@/features/cms/fields";
 import { inventoryInputSchema } from "@/features/cms/inventory.schema";
 import { getCmsSession, getInventoryItem } from "@/lib/cms";
-import { checkImage, removeInventoryImage, uploadInventoryImage } from "@/lib/inventory";
+import { MISSING_TABLE, SETUP_MESSAGE, checkImage, removeInventoryImage, uploadInventoryImage } from "@/lib/inventory";
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -45,6 +45,7 @@ export async function PUT(request: Request, { params }: Params) {
 
   if (error || !data) {
     console.error("Could not update inventory item", { code: error?.code, message: error?.message });
+    if (error?.code === MISSING_TABLE) return Response.json({ message: SETUP_MESSAGE }, { status: 503 });
     const duplicate = error?.code === "23505";
     return Response.json({ message: duplicate ? "That code number is already used by another item." : "The item could not be saved." }, { status: 400 });
   }

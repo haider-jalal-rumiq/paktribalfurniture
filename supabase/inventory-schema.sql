@@ -21,7 +21,7 @@ create table if not exists public.inventory_items (
 
 -- Codes are matched case-insensitively when an invoice deducts stock, so they
 -- must be unique the same way: "ptf-01" and "PTF-01" are the same item.
-create unique index if not exists inventory_items_code_key on public.inventory_items (upper(btrim(code)));
+create unique index if not exists inventory_items_code_unique on public.inventory_items (upper(btrim(code)));
 create index if not exists inventory_items_name_idx on public.inventory_items (name);
 create index if not exists inventory_items_empty_idx on public.inventory_items (item_no) where quantity = 0;
 
