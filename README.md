@@ -81,10 +81,11 @@ order amounts, payment records and old expense links are preserved for exports.
   the overall order status is set separately. Orders have no price/payment inputs.
   Older orders initially have no separate items; add them when editing the order.
 - **Expenses:** type any category. Expenses no longer need an order link.
-- **Labour sheet:** one editable entry per worker/pay period, with salary, agreed
-  total, advance paid, additional salary paid, leave days, and derived balance.
-  Leaves do not automatically deduct salary. Advance + salary paid count toward
-  expenses, using the entry's payment date. Updating cumulative payments moves
+- **Labour sheet:** choose monthly salary, daily wages, or per-item work. Regular
+  pay and overtime are calculated from the entered quantities and rates; the
+  sheet also tracks deductions, payments, and the derived remaining balance.
+  Monthly-worker leave is deducted at the entered per-day salary. Advance plus
+  the remaining amount paid count toward expenses, using the entry's payment date. Updating cumulative payments moves
   that entry's paid amount to its selected payment date; use separate entries
   when payments need to be allocated to separate dates. Do not also enter the same
   labour payment in general expenses. Historical general labour expenses remain

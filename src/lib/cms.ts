@@ -35,14 +35,15 @@ export async function getClient(id: string): Promise<Client | null> {
   return data;
 }
 
-export async function getOrders(filters: { status?: string; clientId?: string } = {}): Promise<OrderWithClient[]> {
+export async function getOrders(filters: { status?: string; clientId?: string; urgentOnly?: boolean } = {}): Promise<OrderWithClient[]> {
   const supabase = await createSupabaseServerClient();
   if (!supabase) return [];
   const data = await readAll((from, to) => {
     let query = supabase.from("orders").select(ORDER_LIST_SELECT);
     if (filters.status) query = query.eq("status", filters.status);
     if (filters.clientId) query = query.eq("client_id", filters.clientId);
-    return query.order("order_no", { ascending: false }).order("id").range(from, to);
+    if (filters.urgentOnly) query = query.eq("urgent", true);
+    return query.order("order_no", { ascending: true }).order("id").range(from, to);
   });
   return (data ?? []) as OrderWithClient[];
 }

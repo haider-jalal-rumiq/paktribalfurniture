@@ -13,8 +13,10 @@ export async function saveLabour(request: Request, id?: string) {
   if (id && id !== v.id) return Response.json({ message: "Check the labour entry." }, { status: 400 });
   // Total is computed here and nowhere else, from the same function the sheet
   // displays, so the stored figure can never disagree with the inputs beside it.
-  const inputs = { salary: v.salary, per_day_salary: v.perDaySalary, ot_hours: v.otHours,
-    ot_rate: v.otRate, deduction: v.deduction, leaves: v.leaves, advance: v.advance, salary_paid: v.salaryPaid };
+  const inputs = { pay_basis: v.payBasis, salary: v.salary, per_day_salary: v.perDaySalary,
+    days_worked: v.daysWorked, item_count: v.itemCount, item_rate: v.itemRate,
+    ot_hours: v.otHours, ot_rate: v.otRate, deduction: v.deduction, leaves: v.leaves,
+    advance: v.advance, salary_paid: v.salaryPaid };
   const record = { name: v.name, period: `${v.period}-01`, paid_on: v.paidOn, ...inputs,
     total_amount: Number(labourTotals(inputs).total), notes: orNull(v.notes) };
   const { data, error } = id

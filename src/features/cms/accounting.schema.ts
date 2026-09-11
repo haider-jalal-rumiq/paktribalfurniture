@@ -1,7 +1,8 @@
 import { z } from "zod";
 
+import { labourPayBasisValues } from "@/content/cms";
 import { amountField, dateField, optionalText } from "@/features/cms/fields";
-import { invoiceTotal } from "@/lib/accounting-core";
+import { invoiceTotal, labourTotals } from "@/lib/accounting-core";
 import { MAX_AMOUNT } from "@/lib/money";
 
 export const balanceInputSchema = z.object({
@@ -42,8 +43,12 @@ export const labourInputSchema = z.object({
   name: z.string().trim().min(2, "Enter the worker's name").max(140),
   period: z.string().regex(/^(19|[2-9]\d)\d{2}-(0[1-9]|1[0-2])$/, "Choose the salary month"),
   paidOn: dateField("Enter a valid payment date"),
+  payBasis: z.enum(labourPayBasisValues),
   salary: amountField("Enter the salary in whole rupees", { allowZero: true }),
   perDaySalary: amountField("Enter the per-day salary in whole rupees", { allowZero: true }),
+  daysWorked: z.coerce.number().int().min(0, "Days worked cannot be negative").max(31, "Days worked cannot exceed 31"),
+  itemCount: z.coerce.number().int().min(0, "Items completed cannot be negative").max(1_000_000, "That is too many items"),
+  itemRate: amountField("Enter the rate per item in whole rupees", { allowZero: true }),
   otHours: z.coerce.number().int().min(0, "Overtime cannot be negative").max(1000, "That is too many hours"),
   otRate: amountField("Enter the overtime rate per hour in whole rupees", { allowZero: true }),
   deduction: amountField("Enter any other deduction in whole rupees", { allowZero: true }),
@@ -51,4 +56,38 @@ export const labourInputSchema = z.object({
   salaryPaid: amountField("Enter salary paid in whole rupees", { allowZero: true }),
   leaves: z.coerce.number().int().min(0).max(31),
   notes: optionalText(1000),
+}).superRefine((value, context) => {
+  const inactiveFieldsAreZero = value.payBasis === "monthly"
+    ? value.daysWorked === 0 && value.itemCount === 0 && value.itemRate === 0
+    : value.payBasis === "daily"
+      ? value.salary === 0 && value.leaves === 0 && value.itemCount === 0 && value.itemRate === 0
+      : value.salary === 0 && value.perDaySalary === 0 && value.leaves === 0 && value.daysWorked === 0;
+  if (!inactiveFieldsAreZero) {
+    context.addIssue({
+      code: "custom",
+      message: "Only enter amounts for the selected worker pay basis",
+      path: ["payBasis"],
+    });
+  }
+  const total = labourTotals({
+    pay_basis: value.payBasis,
+    salary: value.salary,
+    per_day_salary: value.perDaySalary,
+    days_worked: value.daysWorked,
+    item_count: value.itemCount,
+    item_rate: value.itemRate,
+    ot_hours: value.otHours,
+    ot_rate: value.otRate,
+    deduction: value.deduction,
+    leaves: value.leaves,
+    advance: value.advance,
+    salary_paid: value.salaryPaid,
+  }).total;
+  if (total < -BigInt(MAX_AMOUNT) || total > BigInt(MAX_AMOUNT)) {
+    context.addIssue({
+      code: "custom",
+      message: "The total payable is outside the supported amount range",
+      path: ["payBasis"],
+    });
+  }
 });

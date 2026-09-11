@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { Logo, LogoMark } from "@/components/layout/logo";
 import { site } from "@/content/site";
-import { invoiceBrand, orderStatusLabel } from "@/content/cms";
+import { invoiceBrand, labourPayBasisLabel, orderStatusLabel } from "@/content/cms";
 import { formatPkr } from "@/lib/money";
 import { invoiceTotal, labourTotals, showDate } from "@/lib/accounting-core";
 import { monthLabel } from "@/lib/cms-core";
@@ -90,7 +90,7 @@ export function LabourDocument({ entries, month }: { entries: LabourEntry[]; mon
       <caption className="sr-only">Labour payslips. All amounts are in Pakistani rupees.</caption>
       <thead><tr>
         <th scope="col">Name</th>
-        <th scope="col" className="number">Salary</th>
+        <th scope="col" className="number">Regular pay</th>
         <th scope="col" className="number">Overtime</th>
         <th scope="col" className="number">Deductions</th>
         <th scope="col" className="number">Total</th>
@@ -103,12 +103,16 @@ export function LabourDocument({ entries, month }: { entries: LabourEntry[]; mon
           <p className="mt-1 text-xs text-muted">{showDate(entry.paid_on)}</p>
           {/* The working, so a printed payslip can be checked without the app. */}
           <p className="mt-1 text-xs text-muted">
-            Per day {formatPkr(entry.per_day_salary)} · {entry.leaves} {entry.leaves === 1 ? "leave" : "leaves"}
+            {labourPayBasisLabel(entry.pay_basis)} · {entry.pay_basis === "monthly"
+              ? `Per day ${formatPkr(entry.per_day_salary)} · ${entry.leaves} ${entry.leaves === 1 ? "leave" : "leaves"}`
+              : entry.pay_basis === "daily"
+                ? `${entry.days_worked} days @ ${formatPkr(entry.per_day_salary)}`
+                : `${entry.item_count} items @ ${formatPkr(entry.item_rate)}`}
             {entry.ot_hours > 0 ? ` · OT ${entry.ot_hours} h @ ${formatPkr(entry.ot_rate)}` : ""}
             {entry.deduction > 0 ? ` · other ${formatPkr(entry.deduction)}` : ""}
           </p>
         </td>
-        <td data-label="Salary" className="number">{formatPkr(entry.salary)}</td>
+        <td data-label="Regular pay" className="number">{formatPkr(totals.regularPay)}</td>
         <td data-label="Overtime" className="number">{formatPkr(totals.overtime)}</td>
         <td data-label="Deductions" className="number">{formatPkr(totals.leaveDeduction + BigInt(entry.deduction))}</td>
         <td data-label="Total" className="number">{formatPkr(totals.total)}</td>
@@ -121,7 +125,7 @@ export function LabourDocument({ entries, month }: { entries: LabourEntry[]; mon
       <div><dt>Total paid</dt><dd>{formatPkr(sum((row) => row.totals.paid))}</dd></div>
       <div><dt>Balance remaining</dt><dd>{formatPkr(sum((row) => row.totals.balance))}</dd></div>
     </dl>
-    <p className="mt-6 text-xs text-muted">Total payable is salary plus overtime, less leave and other deductions. Total paid includes advance and salary paid.</p>
+    <p className="mt-6 text-xs text-muted">Total payable is regular pay plus overtime, less applicable leave and other deductions. Total paid includes advance and the remaining amount paid.</p>
     {entries.some((row) => row.notes) && <section className="mt-6"><h3 className="document-label">Notes</h3>{entries.filter((row) => row.notes).map((row) => <p key={row.id} className="mt-2 whitespace-pre-wrap break-words text-sm"><strong>{row.name}:</strong> {row.notes}</p>)}</section>}
   </Document>;
 }

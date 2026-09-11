@@ -43,11 +43,13 @@ check(invoiceDiscount(14000n, 0), { discount: 0n, total: 14000n }, "No discount 
 check(invoiceDiscount(999n, 50), { discount: 500n, total: 499n }, "Half a rupee rounds up, matching the SQL");
 
 // Labour payslip, the owner's worked example.
-const shift = { salary: 45000, per_day_salary: 1730, ot_hours: 12, ot_rate: 250, deduction: 500, leaves: 2, advance: 10000, salary_paid: 20000 };
-check(labourTotals(shift), { leaveDeduction: 3460n, overtime: 3000n, total: 44040n, paid: 30000n, balance: 14040n }, "Salary plus overtime, less leave and other deductions");
+const shift = { pay_basis: "monthly", salary: 45000, per_day_salary: 1730, days_worked: 0, item_count: 0, item_rate: 0, ot_hours: 12, ot_rate: 250, deduction: 500, leaves: 2, advance: 10000, salary_paid: 20000 };
+check(labourTotals(shift), { regularPay: 45000n, leaveDeduction: 3460n, overtime: 3000n, total: 44040n, paid: 30000n, balance: 14040n }, "Salary plus overtime, less leave and other deductions");
 check(labourTotals({ ...shift, leaves: 0, ot_hours: 0, deduction: 0 }).total, 45000n, "Bare salary when nothing is added or taken off");
 check(labourTotals({ ...shift, salary: 1000, deduction: 5000, ot_hours: 0, leaves: 0 }).total, -4000n, "Over-deduction shows as negative rather than clamping to zero");
 check(labourTotals({ ...shift, advance: 0, salary_paid: 0 }).balance, 44040n, "Nothing paid yet leaves the whole total owing");
+check(labourTotals({ ...shift, pay_basis: "daily", salary: 0, days_worked: 24, per_day_salary: 1800, leaves: 0 }).regularPay, 43200n, "Daily worker pay is days worked times the daily rate");
+check(labourTotals({ ...shift, pay_basis: "per_item", salary: 0, per_day_salary: 0, item_count: 18, item_rate: 900, leaves: 0 }).regularPay, 16200n, "Per-item worker pay is items completed times the item rate");
 
 check(partnerSplit(11500n, 30n), { minor: 3450n, major: 8050n }, "30/70 split");
 check(partnerSplit(11500n, 30n).minor + partnerSplit(11500n, 30n).major, 11500n, "The two shares always sum to the net");
