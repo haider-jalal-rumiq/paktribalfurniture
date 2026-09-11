@@ -8,5 +8,5 @@ export default async function EditInvoicePage({ params }: { params: Promise<{ id
   const { id } = await params;
   const [invoice, clients, stock] = await Promise.all([getInvoice(id), getClients(), getInventory()]);
   if (!invoice || invoice.status === "void") notFound();
-  return <CmsPage title={`Edit ${invoiceNumber(invoice.invoice_no)}`} backHref={`/factory/invoices/${id}`}><InvoiceForm invoice={invoice} clients={clients} stock={stock} /></CmsPage>;
+  return <CmsPage title={`Edit ${invoiceNumber(invoice.invoice_no)}`} backHref={`/factory/invoices/${id}`}><InvoiceForm invoice={invoice} clients={clients} stock={stock ?? []} /></CmsPage>;
 }

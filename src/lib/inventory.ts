@@ -7,6 +7,10 @@ const ALLOWED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "i
 const MAX_FILE_SIZE = 8 * 1024 * 1024;
 const SIGNED_URL_TTL = 60 * 60;
 
+/** PostgREST's code for "no such table" — the inventory SQL has not been run. */
+export const MISSING_TABLE = "PGRST205";
+export const SETUP_MESSAGE = "The inventory table is missing. Run supabase/inventory-schema.sql in the Supabase SQL editor, then try again.";
+
 /** Codes are compared case- and space-insensitively, matching the SQL unique index. */
 export const normaliseCode = (code: string): string => code.trim().toUpperCase();
 

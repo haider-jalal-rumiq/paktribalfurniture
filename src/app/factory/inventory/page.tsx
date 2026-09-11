@@ -13,7 +13,23 @@ import { cn } from "@/lib/utils";
 export const metadata = { title: "Inventory" };
 
 export default async function InventoryPage() {
-  const [items, supabase] = await Promise.all([getInventory(), createSupabaseServerClient()]);
+  const [rows, supabase] = await Promise.all([getInventory(), createSupabaseServerClient()]);
+
+  // A failed read is not an empty inventory. Say which it is, and what to do.
+  if (rows === null) {
+    return <CmsPage title="Inventory" eyebrow="Factory">
+      <div role="alert" className="rounded-[var(--radius-card)] border border-accent/30 bg-accent/8 p-5">
+        <h2 className="font-display text-2xl text-ink">Set up the inventory table</h2>
+        <p className="mt-2 text-sm leading-6 text-ink-soft">
+          The inventory could not be read. Run <code className="text-accent-deep">supabase/inventory-schema.sql</code>{" "}
+          in the Supabase SQL editor, then reload this page. It creates the <code className="text-accent-deep">inventory_items</code>{" "}
+          table and the private <code className="text-accent-deep">inventory-images</code> bucket.
+        </p>
+      </div>
+    </CmsPage>;
+  }
+
+  const items = rows;
   const photos = supabase
     ? await signedInventoryUrls(supabase, items.flatMap((item) => (item.image_path ? [item.image_path] : [])))
     : {};
