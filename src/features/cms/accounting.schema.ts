@@ -51,7 +51,9 @@ export const labourInputSchema = z.object({
   itemRate: amountField("Enter the rate per item in whole rupees", { allowZero: true }),
   otHours: z.coerce.number().int().min(0, "Overtime cannot be negative").max(1000, "That is too many hours"),
   otRate: amountField("Enter the overtime rate per hour in whole rupees", { allowZero: true }),
+  leaveDeduction: amountField("Enter the leave deduction in whole rupees", { allowZero: true }),
   deduction: amountField("Enter any other deduction in whole rupees", { allowZero: true }),
+  deductionNotes: optionalText(1000),
   advance: amountField("Enter the advance in whole rupees", { allowZero: true }),
   salaryPaid: amountField("Enter salary paid in whole rupees", { allowZero: true }),
   leaves: z.coerce.number().int().min(0).max(31),
@@ -60,8 +62,8 @@ export const labourInputSchema = z.object({
   const inactiveFieldsAreZero = value.payBasis === "monthly"
     ? value.daysWorked === 0 && value.itemCount === 0 && value.itemRate === 0
     : value.payBasis === "daily"
-      ? value.salary === 0 && value.leaves === 0 && value.itemCount === 0 && value.itemRate === 0
-      : value.salary === 0 && value.perDaySalary === 0 && value.leaves === 0 && value.daysWorked === 0;
+      ? value.salary === 0 && value.leaves === 0 && value.leaveDeduction === 0
+      : value.salary === 0 && value.perDaySalary === 0 && value.leaves === 0 && value.leaveDeduction === 0 && value.daysWorked === 0;
   if (!inactiveFieldsAreZero) {
     context.addIssue({
       code: "custom",
@@ -78,6 +80,7 @@ export const labourInputSchema = z.object({
     item_rate: value.itemRate,
     ot_hours: value.otHours,
     ot_rate: value.otRate,
+    leave_deduction: value.leaveDeduction,
     deduction: value.deduction,
     leaves: value.leaves,
     advance: value.advance,

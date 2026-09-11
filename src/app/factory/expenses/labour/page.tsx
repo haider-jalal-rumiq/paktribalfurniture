@@ -39,6 +39,7 @@ export default async function LabourPage({ searchParams }: { searchParams: Promi
         { label: "Paid", amount: totals.paid },
         { label: "Balance", amount: totals.balance },
       ].map((field) => <div key={field.label}><dt className="text-xs text-muted">{field.label}</dt><dd className="mt-1 break-all font-semibold tabular-nums">{formatPkr(field.amount)}</dd></div>)}</dl>
+      {entry.deduction_notes && <p className="mt-4 whitespace-pre-wrap break-words text-xs text-muted"><span className="font-semibold text-ink-soft">Other deduction:</span> {entry.deduction_notes}</p>}
       <p className="mt-4 text-xs text-muted">Payment date: {showDate(entry.paid_on)}</p>
     </Link>)}</div>
     {!entries.length && <EmptyState>No labour entries for this month. Add a worker to begin.</EmptyState>}

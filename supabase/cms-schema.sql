@@ -215,6 +215,8 @@ create table if not exists public.labour_entries (
   advance bigint not null default 0 check (advance between 0 and 999999999999),
   salary_paid bigint not null default 0 check (salary_paid between 0 and 999999999999),
   leaves integer not null default 0 check (leaves between 0 and 31),
+  leave_deduction bigint not null default 0,
+  deduction_notes text,
   notes text check (char_length(notes) <= 1000),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
@@ -272,6 +274,28 @@ alter table public.labour_entries add column if not exists ot_rate bigint not nu
   check (ot_rate between 0 and 999999999999);
 alter table public.labour_entries add column if not exists deduction bigint not null default 0
   check (deduction between 0 and 999999999999);
+-- Preserve the amount previously calculated from leave days when upgrading an
+-- existing sheet. The guarded block runs the backfill only when the column is
+-- first introduced, so a deliberately entered zero is never overwritten later.
+do $$
+begin
+  if not exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'labour_entries' and column_name = 'leave_deduction'
+  ) then
+    alter table public.labour_entries add column leave_deduction bigint not null default 0;
+    update public.labour_entries
+      set leave_deduction = leaves::bigint * per_day_salary
+      where leaves > 0 and per_day_salary > 0;
+  end if;
+end $$;
+alter table public.labour_entries add column if not exists deduction_notes text;
+alter table public.labour_entries drop constraint if exists labour_entries_leave_deduction_check;
+alter table public.labour_entries add constraint labour_entries_leave_deduction_check
+  check (leave_deduction between 0 and 999999999999);
+alter table public.labour_entries drop constraint if exists labour_entries_deduction_notes_check;
+alter table public.labour_entries add constraint labour_entries_deduction_notes_check
+  check (deduction_notes is null or char_length(deduction_notes) <= 1000);
 alter table public.labour_entries add column if not exists pay_basis text not null default 'monthly';
 alter table public.labour_entries add column if not exists days_worked integer not null default 0;
 alter table public.labour_entries add column if not exists item_count integer not null default 0;
@@ -286,8 +310,8 @@ alter table public.labour_entries add constraint labour_entries_basis_amounts_ch
   and item_rate between 0 and 999999999999
   and (
     (pay_basis = 'monthly' and days_worked = 0 and item_count = 0 and item_rate = 0)
-    or (pay_basis = 'daily' and salary = 0 and leaves = 0 and item_count = 0 and item_rate = 0)
-    or (pay_basis = 'per_item' and salary = 0 and per_day_salary = 0 and leaves = 0 and days_worked = 0)
+    or (pay_basis = 'daily' and salary = 0 and leaves = 0 and leave_deduction = 0)
+    or (pay_basis = 'per_item' and salary = 0 and per_day_salary = 0 and leaves = 0 and leave_deduction = 0 and days_worked = 0)
   )
 );
 -- Deductions can now exceed earnings, and what has been paid can exceed a
