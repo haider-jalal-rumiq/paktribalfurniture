@@ -26,6 +26,22 @@ export const amountField = (message: string, { allowZero = false } = {}) =>
   });
 
 /**
+ * An amount a person may leave blank. Blank means zero rather than a
+ * validation error — the field is genuinely optional, but anything actually
+ * typed must still be a whole rupee figure.
+ */
+export const optionalAmountField = (message: string) =>
+  z.union([z.string(), z.number()]).optional().transform((value, ctx) => {
+    if (value === undefined || (typeof value === "string" && value.trim() === "")) return 0;
+    const parsed = parseAmount(value);
+    if (parsed === null) {
+      ctx.addIssue({ code: "custom", message });
+      return z.NEVER;
+    }
+    return parsed;
+  });
+
+/**
  * An unticked checkbox is absent from FormData, not "false" — so a missing key
  * is the off state. Written explicitly rather than with z.coerce.boolean(),
  * which would read the string "false" as true.

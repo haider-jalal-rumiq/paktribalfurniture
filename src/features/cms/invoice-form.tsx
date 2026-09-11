@@ -4,6 +4,7 @@ import { Plus, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { FormSection, StickyActions } from "@/components/cms/cms-page";
+import { InvoiceItemsPreview } from "@/components/cms/invoice-items-preview";
 import { Button } from "@/components/ui/button";
 import { Field, Input, Select, Textarea } from "@/components/ui/field";
 import { invoiceInputSchema } from "@/features/cms/accounting.schema";
@@ -53,6 +54,10 @@ export function InvoiceForm({ invoice, clients, defaultClientId }: { invoice?: I
           <Button type="button" size="sm" variant="ghost" className="mt-3" onClick={() => setItems(items.filter((item) => item.id !== row.id))}><Trash2 className="h-4 w-4" aria-hidden="true" />Remove item {index + 1}</Button>
         </fieldset>)}
         <Button type="button" size="sm" variant="outline" disabled={items.length >= 100} onClick={() => setItems([...items, { id: crypto.randomUUID(), item: "", quantity: "1", amount: "", source: "" }])}><Plus className="h-4 w-4" aria-hidden="true" />Add invoice item</Button>
+        {items.length > 0 && <div className="border-t border-hairline pt-4">
+          <p className="mb-3 text-xs font-bold uppercase tracking-[0.14em] text-muted">Invoice preview · {items.length} {items.length === 1 ? "item" : "items"}</p>
+          <InvoiceItemsPreview items={items} />
+        </div>}
         <div className="flex flex-wrap items-baseline justify-between gap-3 border-t border-hairline pt-4"><span className="font-semibold text-ink-soft">Total amount</span><output className="break-all text-xl font-bold tabular-nums text-accent">{total !== null ? formatPkr(total) : "Enter valid amounts"}</output></div>
       </div>
     </FormSection>

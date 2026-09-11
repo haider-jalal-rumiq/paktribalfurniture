@@ -111,6 +111,15 @@ export async function getLabourEntries(month: string, byPaymentDate = false): Pr
     .order("name").order("id").range(from, to)) ?? [];
 }
 
+/** Every salary month that has entries, newest first, for the month picker. */
+export async function getLabourMonths(): Promise<string[]> {
+  const supabase = await createSupabaseServerClient();
+  if (!supabase) return [];
+  const rows = await readAll<{ period: string }>((from, to) => supabase.from("labour_entries")
+    .select("period").order("period", { ascending: false }).range(from, to));
+  return [...new Set((rows ?? []).map((row) => row.period.slice(0, 7)))];
+}
+
 export async function getLabourEntry(id: string): Promise<LabourEntry | null> {
   const supabase = await createSupabaseServerClient();
   if (!supabase) return null;
