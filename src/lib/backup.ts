@@ -3,10 +3,14 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { readAll } from "@/lib/cms-read";
 import type { Database } from "@/types/database";
 
-const TABLES = ["clients", "orders", "order_payments", "expenses", "balance_entries", "labour_entries", "invoices"] as const;
+// Every table holding business records. A table missing here is a table the
+// weekly export silently loses, so add new ones the moment they are created.
+const TABLES = ["clients", "orders", "order_payments", "expenses", "balance_entries",
+  "labour_entries", "invoices", "shop_sales", "shop_invoices", "shop_expenses"] as const;
 export interface BackupBundle {
   exportedAt: string;
-  version: 2;
+  /** 3 added the shop ledger tables. */
+  version: 3;
   clients: unknown[];
   orders: unknown[];
   order_payments: unknown[];
@@ -14,6 +18,9 @@ export interface BackupBundle {
   balance_entries: unknown[];
   labour_entries: unknown[];
   invoices: unknown[];
+  shop_sales: unknown[];
+  shop_invoices: unknown[];
+  shop_expenses: unknown[];
 }
 export async function buildBackup(supabase: SupabaseClient<Database>): Promise<BackupBundle | { error: string }> {
   const results = await Promise.all(TABLES.map(async (table) => {
@@ -21,5 +28,5 @@ export async function buildBackup(supabase: SupabaseClient<Database>): Promise<B
     return [table, rows] as const;
   }));
   if (results.some(([, rows]) => rows === null)) return { error: "The export could not be built. Please try again." };
-  return { exportedAt: new Date().toISOString(), version: 2, ...Object.fromEntries(results) } as BackupBundle;
+  return { exportedAt: new Date().toISOString(), version: 3, ...Object.fromEntries(results) } as BackupBundle;
 }

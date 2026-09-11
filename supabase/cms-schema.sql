@@ -272,6 +272,24 @@ alter table public.labour_entries add column if not exists ot_rate bigint not nu
   check (ot_rate between 0 and 999999999999);
 alter table public.labour_entries add column if not exists deduction bigint not null default 0
   check (deduction between 0 and 999999999999);
+alter table public.labour_entries add column if not exists pay_basis text not null default 'monthly';
+alter table public.labour_entries add column if not exists days_worked integer not null default 0;
+alter table public.labour_entries add column if not exists item_count integer not null default 0;
+alter table public.labour_entries add column if not exists item_rate bigint not null default 0;
+alter table public.labour_entries drop constraint if exists labour_entries_pay_basis_check;
+alter table public.labour_entries add constraint labour_entries_pay_basis_check
+  check (pay_basis in ('monthly', 'daily', 'per_item'));
+alter table public.labour_entries drop constraint if exists labour_entries_basis_amounts_check;
+alter table public.labour_entries add constraint labour_entries_basis_amounts_check check (
+  days_worked between 0 and 31
+  and item_count between 0 and 1000000
+  and item_rate between 0 and 999999999999
+  and (
+    (pay_basis = 'monthly' and days_worked = 0 and item_count = 0 and item_rate = 0)
+    or (pay_basis = 'daily' and salary = 0 and leaves = 0 and item_count = 0 and item_rate = 0)
+    or (pay_basis = 'per_item' and salary = 0 and per_day_salary = 0 and leaves = 0 and days_worked = 0)
+  )
+);
 -- Deductions can now exceed earnings, and what has been paid can exceed a
 -- reduced total, so both of the original guards on total_amount are wrong.
 alter table public.labour_entries drop constraint if exists labour_entries_check;

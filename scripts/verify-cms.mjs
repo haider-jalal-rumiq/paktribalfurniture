@@ -21,6 +21,9 @@ let browser;
 const results = [];
 const check = (name, condition) => { assert.ok(condition, name); results.push(name); console.log(`PASS ${name}`); };
 async function go(page, path) { await page.goto(BASE + path, { waitUntil: "networkidle" }); }
+async function openDisclosure(details) {
+  if (!await details.evaluate(element => element.open)) await details.locator(":scope > summary").click();
+}
 async function savePdf(page, filename) {
   await page.evaluate(async () => {
     await document.fonts.ready;
@@ -59,8 +62,21 @@ try {
   check("Dark system preference still renders white", await page.evaluate(() => getComputedStyle(document.body).backgroundColor === "rgb(255, 255, 255)" && getComputedStyle(document.documentElement).colorScheme === "light"));
   await page.screenshot({ path: `${OUT}/dashboard-desktop.png`, fullPage: true });
   await go(page, "/factory/orders");
-  await page.locator(".order-client > summary").filter({ hasText: "QA Pak Turk" }).click();
-  await page.locator(".order-branch > summary").click();
+  const clientSummary = page.locator(".order-client > summary").filter({ hasText: "QA Pak Turk" });
+  await clientSummary.click();
+  const orderSummaries = page.locator(".order-client[open] .order-branch > summary");
+  check("Orders are listed from #1 to #2", await orderSummaries.nth(0).innerText().then(text => text.includes("#1")) && await orderSummaries.nth(1).innerText().then(text => text.includes("#2")));
+  check("Client names have strong emphasis", await clientSummary.getByText("QA Pak Turk", { exact: true }).evaluate(element => Number(getComputedStyle(element).fontWeight) >= 700));
+  await page.getByRole("link", { name: "Urgent orders", exact: true }).click();
+  await page.waitForURL(`${BASE}/factory/orders?urgent=1`);
+  await openDisclosure(page.locator(".order-client").filter({ hasText: "QA Pak Turk" }));
+  const urgentOrderSummaries = await page.locator(".order-branch > summary").allInnerTexts();
+  check("Urgent orders button shows urgent orders only", urgentOrderSummaries.length === 1 && urgentOrderSummaries[0].includes("#2 · Urgent reception desk"));
+  await page.screenshot({ path: `${OUT}/orders-urgent-desktop.png`, fullPage: true });
+  await page.getByRole("link", { name: "Show all orders", exact: true }).click();
+  await page.waitForURL(`${BASE}/factory/orders`);
+  await openDisclosure(page.locator(".order-client").filter({ hasText: "QA Pak Turk" }));
+  await page.locator(".order-branch > summary").first().click();
   check("Three-level hierarchy expands to item statuses", await page.getByText("Chairs", { exact: false }).isVisible() && await page.locator(".order-branch ol").getByText("Completed", { exact: true }).isVisible());
   await page.screenshot({ path: `${OUT}/orders-desktop.png`, fullPage: true });
   await go(page, `/factory/orders/${fixture.order.id}`);
@@ -98,15 +114,31 @@ try {
   check("Custom categories are saved", fixture.db.expenses.some(row => row.category === "Custom transport"));
   await go(page, "/factory/expenses/labour/new?month=2026-09");
   await page.getByLabel("Worker name").fill("QA Second Worker");
-  await page.getByLabel("Salary (Rs)", { exact: true }).fill("12000");
-  await page.getByLabel("Total amount (Rs)", { exact: true }).fill("10000");
-  await page.getByLabel("Advance paid (Rs)", { exact: true }).fill("2000");
-  await page.getByLabel("Salary paid, excluding advance (Rs)").fill("1000");
+  check("Labour form offers monthly, daily, and per-item pay", await page.getByRole("radio").count() === 3);
+  await page.getByLabel("Monthly salary (Rs)", { exact: true }).fill("12000");
+  await page.getByLabel("Per-day salary (Rs)", { exact: true }).fill("1000");
   await page.getByLabel("Leaves (days)").fill("1");
-  check("Labour balance preview is correct", await page.getByText("Rs 7,000", { exact: true }).count() === 1);
+  await page.getByLabel("No. of overtime hours").fill("2");
+  await page.getByLabel("Rate per overtime hour (Rs)").fill("500");
+  await page.getByLabel("Advance paid (Rs)", { exact: true }).fill("2000");
+  await page.getByLabel("Amount paid, excluding advance (Rs)").fill("1000");
+  check("Monthly pay includes overtime and deducts leave", await page.getByText("Rs 9,000", { exact: true }).count() === 1);
+  await page.getByLabel("Daily worker").check();
+  await page.getByLabel("No. of days worked").fill("6");
+  await page.getByLabel("Rate per day (Rs)").fill("1500");
+  check("Daily pay multiplies days by the daily rate", await page.getByText("Rs 7,000", { exact: true }).count() === 1);
+  await page.getByLabel("Work per item").check();
+  await page.getByLabel("No. of items completed").fill("8");
+  await page.getByLabel("Rate per item (Rs)").fill("1200");
+  check("Per-item pay multiplies items by the item rate", await page.getByText("Rs 7,600", { exact: true }).count() === 1);
+  await page.screenshot({ path: `${OUT}/labour-form-desktop.png`, fullPage: true });
+  await page.setViewportSize({ width: 375, height: 812 });
+  check("Labour form fits a 375px mobile screen", await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
+  await page.screenshot({ path: `${OUT}/labour-form-mobile.png`, fullPage: true });
+  await page.setViewportSize({ width: 1440, height: 1000 });
   await page.getByRole("button", { name: "Save labour entry", exact: true }).click();
-  await page.waitForURL(/\/cms\/expenses\/labour\?month/);
-  check("Labour entry persists", fixture.db.labour_entries.length === 2);
+  await page.waitForURL(/\/factory\/expenses\/labour\?month/);
+  check("Labour entry persists with its selected basis", fixture.db.labour_entries.length === 2 && fixture.db.labour_entries.at(-1).pay_basis === "per_item" && fixture.db.labour_entries.at(-1).total_amount === 10600);
   await go(page, "/factory/invoices/new");
   await page.getByLabel("Client", { exact: true }).selectOption(fixture.client.id);
   await page.getByRole("button", { name: "Add invoice item", exact: true }).click();
@@ -116,7 +148,7 @@ try {
   await page.getByLabel("Unit amount (Rs)", { exact: true }).fill("2500");
   check("Invoice form multiplies quantity correctly", await page.getByText("Rs 5,000", { exact: true }).count() === 1);
   await page.getByRole("button", { name: "Save invoice", exact: true }).click();
-  await page.waitForURL(/\/cms\/invoices\/[0-9a-f-]+$/);
+  await page.waitForURL(/\/factory\/invoices\/[0-9a-f-]+$/);
   const created = fixture.db.invoices.at(-1);
   check("Invoice snapshots client branding details", created.total_amount === 5000 && created.client_name === fixture.client.name);
   const replay = await context.request.post(`${BASE}/api/cms/invoices`, { data: { id: created.id, clientId: created.client_id, issuedOn: created.issued_on, notes: "", items: created.items } });
@@ -143,7 +175,7 @@ try {
   const badLabour = await context.request.post(`${BASE}/api/cms/labour`, { data: { id: crypto.randomUUID(), name: "QA invalid", period: "2026-09", paidOn: "2026-09-09", salary: 100, totalAmount: 100, advance: 90, salaryPaid: 90, leaves: 0 } });
   check("Overpaid labour rejected", badLabour.status() === 400);
   const backup = await (await context.request.get(`${BASE}/api/cms/export`)).json();
-  check("Backup includes invoices, balances, labour and embedded order items", backup.version === 2 && backup.invoices.length === 4 && backup.balance_entries.length === 2 && backup.labour_entries.length === 2 && backup.orders[0].items.length === 3);
+  check("Backup includes invoices, balances, labour and embedded order items", backup.version === 3 && backup.invoices.length === 4 && backup.balance_entries.length === 2 && backup.labour_entries.length === 2 && backup.orders[0].items.length === 3);
   for (const [name, path] of [["invoice", `/factory/invoices/${fixture.db.invoices[0].id}`], ["order", `/factory/orders/${fixture.order.id}/print`], ["labour", "/factory/expenses/labour/print?month=2026-09"]]) {
     await go(page, path); await page.locator(".ptf-document img").waitFor();
     await page.screenshot({ path: `${OUT}/${name}-print-preview.png`, fullPage: true });
@@ -171,7 +203,7 @@ try {
   await page.setViewportSize({ width: 375, height: 812 });
   for (const [name, path] of [["dashboard", "/factory"], ["orders", "/factory/orders"], ["invoices", "/factory/invoices"], ["labour", "/factory/expenses/labour?month=2026-09"], ["invoice", `/factory/invoices/${fixture.db.invoices[0].id}`]]) {
     await go(page, path);
-    if (name === "orders") { await page.locator(".order-client > summary").filter({ hasText: "QA Pak Turk" }).click(); await page.locator(".order-branch > summary").click(); }
+    if (name === "orders") { await page.locator(".order-client > summary").filter({ hasText: "QA Pak Turk" }).click(); await page.locator(".order-branch > summary").first().click(); }
     check(`${name} fits a 375px mobile screen`, await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
     await page.screenshot({ path: `${OUT}/${name}-mobile.png`, fullPage: true });
   }
@@ -185,5 +217,3 @@ try {
   config.include = config.include.filter(path => !path.startsWith(".verify-cms/"));
   await writeFile("tsconfig.json", JSON.stringify(config, null, 2) + "\n");
 }
-
-

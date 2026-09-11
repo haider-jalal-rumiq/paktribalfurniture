@@ -43,10 +43,17 @@ export const expenseCategories = [
   { value: "other", label: "Other" },
 ] as const;
 
+export const labourPayBases = [
+  { value: "monthly", label: "Monthly salary worker" },
+  { value: "daily", label: "Daily worker" },
+  { value: "per_item", label: "Work per item" },
+] as const;
+
 export type ClientType = (typeof clientTypes)[number]["value"];
 export type OrderStatus = (typeof orderStatuses)[number]["value"];
 export type PaymentMethod = (typeof paymentMethods)[number]["value"];
 export type ExpenseCategory = string;
+export type LabourPayBasis = (typeof labourPayBases)[number]["value"];
 
 type Option = { readonly value: string; readonly label: string };
 
@@ -61,11 +68,16 @@ export const clientTypeShort = (value: string): string =>
 export const orderStatusLabel = (value: string): string => labelOf(orderStatuses, value);
 export const paymentMethodLabel = (value: string): string => labelOf(paymentMethods, value);
 export const expenseCategoryLabel = (value: string): string => labelOf(expenseCategories, value);
+export const labourPayBasisLabel = (value: string): string => labelOf(labourPayBases, value);
 
 export const clientTypeValues: readonly string[] = clientTypes.map((type) => type.value);
 export const orderStatusValues: readonly string[] = orderStatuses.map((status) => status.value);
 export const paymentMethodValues: readonly string[] = paymentMethods.map((method) => method.value);
 export const expenseCategoryValues: readonly string[] = expenseCategories.map((category) => category.value);
+export const labourPayBasisValues = labourPayBases.map((basis) => basis.value) as [
+  LabourPayBasis,
+  ...LabourPayBasis[],
+];
 
 /** Legacy category labels remain readable; new expenses accept any category. */
 export const labourExpenseLabel = "Labour payments";

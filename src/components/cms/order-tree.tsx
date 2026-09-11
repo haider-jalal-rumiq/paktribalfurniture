@@ -29,8 +29,8 @@ export function OrderTree({ orders, clients, expandClients = false }: { orders: 
       const urgent = clientOrders.filter((order) => order.urgent).length;
       return <details key={client.id} open={expandClients} className="order-client overflow-hidden rounded-[var(--radius-card)] border border-hairline bg-surface">
         <summary className="flex min-h-20 cursor-pointer list-none items-center gap-4 px-4 py-4 sm:px-5">
-          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-wash text-sm font-bold text-ink-soft" aria-hidden="true">{client.name.slice(0, 2).toUpperCase()}</span>
-          <span className="min-w-0 flex-1"><span className="block break-words font-semibold text-ink">{client.name}</span><span className="mt-1 block text-xs text-muted">{clientTypeShort(client.type)} · {clientOrders.length} orders · {open} open · {complete} completed</span>{urgent > 0 && <span className="mt-1.5 flex"><Badge tone="accent"><TriangleAlert className="h-3 w-3" aria-hidden="true" />{urgent} urgent</Badge></span>}</span>
+          <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-accent/10 text-sm font-bold text-accent-deep" aria-hidden="true">{client.name.slice(0, 2).toUpperCase()}</span>
+          <span className="min-w-0 flex-1"><span className="block break-words text-base font-bold text-accent-deep">{client.name}</span><span className="mt-1 block text-xs text-muted">{clientTypeShort(client.type)} · {clientOrders.length} orders · {open} open · {complete} completed</span>{urgent > 0 && <span className="mt-1.5 flex"><Badge tone="accent"><TriangleAlert className="h-3 w-3" aria-hidden="true" />{urgent} urgent</Badge></span>}</span>
           <ChevronRight className="tree-chevron h-5 w-5 shrink-0 text-accent" aria-hidden="true" />
         </summary>
         <div className="border-t border-hairline px-3 pb-3 sm:px-5">

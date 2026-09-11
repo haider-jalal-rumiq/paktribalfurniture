@@ -84,20 +84,30 @@ export function invoiceDiscount(subtotal: bigint, discountPct: number) {
 }
 
 /**
- * Labour payslip. Everything is derived from the six inputs, so the sheet can
- * never show a total that disagrees with the salary and hours behind it.
+ * Labour payslip. Regular pay depends on the worker's agreed basis: monthly
+ * salary, days worked, or items completed. Overtime applies to every basis.
+ * Everything is derived, so the sheet cannot disagree with its inputs.
  * Total may go negative when deductions exceed earnings — that is a real
  * over-deduction and is shown rather than clamped.
  */
 export function labourTotals(entry: {
-  salary: number; per_day_salary: number; ot_hours: number; ot_rate: number;
-  deduction: number; leaves: number; advance: number; salary_paid: number;
+  pay_basis: "monthly" | "daily" | "per_item"; salary: number;
+  per_day_salary: number; days_worked: number; item_count: number; item_rate: number;
+  ot_hours: number; ot_rate: number; deduction: number; leaves: number;
+  advance: number; salary_paid: number;
 }) {
-  const leaveDeduction = BigInt(entry.leaves) * BigInt(entry.per_day_salary);
+  const regularPay = entry.pay_basis === "daily"
+    ? BigInt(entry.days_worked) * BigInt(entry.per_day_salary)
+    : entry.pay_basis === "per_item"
+      ? BigInt(entry.item_count) * BigInt(entry.item_rate)
+      : BigInt(entry.salary);
+  const leaveDeduction = entry.pay_basis === "monthly"
+    ? BigInt(entry.leaves) * BigInt(entry.per_day_salary)
+    : 0n;
   const overtime = BigInt(entry.ot_hours) * BigInt(entry.ot_rate);
-  const total = BigInt(entry.salary) + overtime - leaveDeduction - BigInt(entry.deduction);
+  const total = regularPay + overtime - leaveDeduction - BigInt(entry.deduction);
   const paid = BigInt(entry.advance) + BigInt(entry.salary_paid);
-  return { leaveDeduction, overtime, total, paid, balance: total - paid };
+  return { regularPay, leaveDeduction, overtime, total, paid, balance: total - paid };
 }
 
 /** Two partners. The minor share truncates so the pair always sums to `net`. */
