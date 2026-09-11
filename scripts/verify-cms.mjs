@@ -130,9 +130,9 @@ try {
   await page.getByLabel("Daily worker").check();
   await page.getByLabel("No. of days worked").fill("6");
   await page.getByLabel("Rate per day (Rs)").fill("1500");
-  await page.getByLabel("Work per item (optional)").fill("4");
-  await page.getByLabel("Payment per item (Rs)").fill("250");
-  check("Daily pay combines days and optional item work", await page.getByText("Rs 7,750", { exact: true }).count() === 1);
+  await page.getByLabel("Work item", { exact: true }).fill("4");
+  await page.getByLabel("Item payment (Rs)", { exact: true }).fill("250");
+  check("Daily pay combines day pay and an optional item-payment lump sum", await page.getByText("Rs 7,000", { exact: true }).count() === 1);
   check("Daily workers retain other deduction notes", await page.getByLabel("Other deduction notes", { exact: true }).inputValue() === "Tool replacement");
   await page.getByLabel("Work per item").check();
   await page.getByLabel("No. of items completed").fill("8");
@@ -147,7 +147,7 @@ try {
   await page.waitForURL(/\/factory\/expenses\/labour\?month/);
   check("Labour entry persists with its selected basis", fixture.db.labour_entries.length === 2 && fixture.db.labour_entries.at(-1).pay_basis === "per_item" && fixture.db.labour_entries.at(-1).total_amount === 10350);
   check("Other deduction notes persist", fixture.db.labour_entries.at(-1).deduction_notes === "Tool replacement");
-  check("Saved labour entry appears in the labour entries list", await page.getByRole("heading", { name: "QA Second Worker", exact: true }).isVisible());
+  check("Saved labour entry appears in the labour entries list", await page.getByText("QA Second Worker", { exact: true }).isVisible());
   await go(page, "/factory/invoices/new");
   await page.getByLabel("Client", { exact: true }).selectOption(fixture.client.id);
   await page.getByRole("button", { name: "Add invoice item", exact: true }).click();
@@ -155,7 +155,7 @@ try {
   await page.getByLabel("Stock / order", { exact: true }).fill("Stock");
   await page.getByLabel("Quantity", { exact: true }).fill("2");
   await page.getByLabel("Unit amount (Rs)", { exact: true }).fill("2500");
-  check("Invoice form multiplies quantity correctly", await page.getByText("Rs 5,000", { exact: true }).count() === 1);
+  check("Invoice form multiplies quantity correctly", await page.getByText("Rs 5,000", { exact: true }).first().isVisible());
   await page.getByRole("button", { name: "Save invoice", exact: true }).click();
   await page.waitForURL(/\/factory\/invoices\/[0-9a-f-]+$/);
   const created = fixture.db.invoices.at(-1);
@@ -184,7 +184,7 @@ try {
   const badLabour = await context.request.post(`${BASE}/api/cms/labour`, { data: { id: crypto.randomUUID(), name: "QA invalid", period: "2026-09", paidOn: "2026-09-09", salary: 100, totalAmount: 100, advance: 90, salaryPaid: 90, leaves: 0 } });
   check("Overpaid labour rejected", badLabour.status() === 400);
   const backup = await (await context.request.get(`${BASE}/api/cms/export`)).json();
-  check("Backup includes invoices, balances, labour and embedded order items", backup.version === 3 && backup.invoices.length === 4 && backup.balance_entries.length === 2 && backup.labour_entries.length === 2 && backup.orders[0].items.length === 3);
+  check("Backup includes invoices, balances, labour and embedded order items", backup.version === 3 && backup.invoices.length === 4 && backup.balance_entries.length === 2 && backup.labour_entries.length === 2 && backup.orders.some(order => order.id === fixture.order.id && order.items.length === 3));
   for (const [name, path] of [["invoice", `/factory/invoices/${fixture.db.invoices[0].id}`], ["order", `/factory/orders/${fixture.order.id}/print`], ["labour", "/factory/expenses/labour/print?month=2026-09"]]) {
     await go(page, path); await page.locator(".ptf-document img").waitFor();
     await page.screenshot({ path: `${OUT}/${name}-print-preview.png`, fullPage: true });

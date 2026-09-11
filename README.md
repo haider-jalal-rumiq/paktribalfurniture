@@ -29,6 +29,7 @@ The public catalogue works without Supabase, but products stay empty and enquiry
 1. Create a dedicated Supabase project for Pak Tribal Furniture. Do not reuse an unrelated production project.
 2. Open the SQL editor and run `supabase/schema.sql` once. It creates the tables, indexes, row-level security policies, explicit Data API grants, and the `product-images` Storage bucket.
    Then run `supabase/cms-schema.sql` for the business CMS: clients, orders, payments, expenses, push subscriptions, and the private `order-images` and `backups` buckets.
+   Then run `supabase/inventory-schema.sql` for the factory inventory: stock items and the private `inventory-images` bucket.
    Then run `supabase/shop-schema.sql` for the shop ledger: counter sales, shop invoices and shop expenses. It reuses helpers created by the two files above, so run it last. Both CMS files are additive and safe to re-run on an existing database.
 3. Copy the project URL and publishable key into `.env.local` as `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`.
 4. Keep public email signups disabled in Supabase Auth.

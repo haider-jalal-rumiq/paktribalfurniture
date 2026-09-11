@@ -7,7 +7,11 @@ export type Json =
   | Json[];
 
 export type OrderItem = { id: string; name: string; quantity: number; status: string; notes: string };
-export type InvoiceItem = { id: string; item: string; quantity: number; amount: number; source: string };
+export type InvoiceItem = {
+  id: string; item: string; quantity: number; amount: number; source: string;
+  /** Inventory code, when the line came from stock. Drives the deduction. */
+  code?: string;
+};
 export type BalanceEntry = { id: string; received_on: string; amount: number; note: string; created_at: string };
 export type LabourEntry = {
   id: string; name: string; period: string; paid_on: string;
@@ -34,6 +38,10 @@ export type ShopSale = {
   invoice_id: string | null; returned_on: string | null; note: string | null;
   created_at: string; updated_at: string;
 };
+export type InventoryItem = {
+  id: string; item_no: number; code: string; name: string; quantity: number;
+  image_path: string | null; note: string | null; created_at: string; updated_at: string;
+};
 export type ShopExpense = {
   id: string; spent_on: string; category: string; amount: number;
   note: string | null; created_at: string;
@@ -56,6 +64,7 @@ export interface Database {
       balance_entries: TableShape<BalanceEntry, "amount" | "note">;
       shop_sales: TableShape<ShopSale, "name" | "sale_price">;
       shop_expenses: TableShape<ShopExpense, "category" | "amount">;
+      inventory_items: TableShape<InventoryItem, "code" | "name">;
       shop_invoices: {
         Row: ShopInvoice;
         Insert: Omit<Partial<ShopInvoice>, "total_amount"> & Pick<ShopInvoice, "customer_name" | "items">;

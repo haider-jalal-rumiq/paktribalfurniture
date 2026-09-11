@@ -36,6 +36,9 @@ export function parseOrderForm(formData: FormData): { input: OrderInput; files: 
     orderDate: formData.get("orderDate") ?? "",
     expectedDate: formData.get("expectedDate") ?? "",
     status: formData.get("status") ?? "",
+    // An unticked checkbox is absent, and FormData.get returns null for it —
+    // which checkboxField would reject, so map it back to undefined.
+    urgent: formData.get("urgent") ?? undefined,
     notes: formData.get("notes") ?? "",
     existingImagePaths: formData.getAll("existingImagePaths").map(String),
   });

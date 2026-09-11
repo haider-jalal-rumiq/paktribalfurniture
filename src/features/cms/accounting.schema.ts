@@ -18,6 +18,8 @@ export const invoiceItemSchema = z.object({
   quantity: z.coerce.number().int().min(1, "Quantity must be at least 1").max(10000),
   amount: amountField("Enter an item amount in whole rupees", { allowZero: true }),
   source: z.string().trim().min(1, "Enter stock or order").max(80),
+  /** Optional inventory code. A line that carries one takes stock out. */
+  code: z.string().trim().max(40).optional(),
 });
 
 export const invoiceInputSchema = z.object({

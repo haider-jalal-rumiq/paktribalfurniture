@@ -25,7 +25,7 @@ delete it.
 |---|---|---|---|
 | **Site** | `/`, `/collections`, `/custom`, `/contact`, `/privacy` | public | catalogue + WhatsApp enquiry handoff |
 | **Studio** | `/studio` | admin | the product catalogue |
-| **Factory** | `/factory` | admin | the *factory*: clients, orders, invoices, balances, labour, expenses |
+| **Factory** | `/factory` | admin | the *factory*: clients, orders, invoices, inventory, balances, labour, expenses |
 | **Shop** | `/shop` | admin | the *showroom*: counter sales, invoices, expenses, profit split |
 
 All admin areas use the **same** Supabase email+password login and the same
@@ -130,6 +130,8 @@ src/
   lib/
     cms-core.ts  pure logic: balances, PK dates, month ranges (no Supabase)
     cms.ts       "server-only" reads; re-exports cms-core
+    inventory.ts stock photos and the invoice stock deduction
+    orders.ts    derived order urgency
     accounting-core.ts  pure money logic: shop rows, invoice discount, payslips
     money.ts     whole-rupee formatting and parsing
     supabase/    client · server · proxy · admin (service role, cron only)
@@ -165,6 +167,17 @@ src/
   and balance. `lib/labour-write.ts` is the only writer of
   `labour_entries.total_amount`, and it uses that same function. Totals may go
   negative when deductions exceed earnings — that is shown, not clamped.
+- **Inventory belongs to the factory.** A factory invoice line carrying a
+  `code` deducts that inventory item on **create only** — editing an invoice
+  never re-adjusts stock, because a second pass would double-deduct the lines
+  that did not change. Overselling is reported, not refused: stock floors at 0
+  and the save returns a warning. Codes are matched case-insensitively, which
+  the SQL unique index on `upper(btrim(code))` mirrors.
+- **Urgency is derived, never stored alone.** `orders.urgent` is only the
+  hand-ticked flag; `isUrgentOrder()` in `lib/orders.ts` ORs it with "open and
+  within `URGENT_WITHIN_DAYS` of the delivery date". Read urgency through that
+  function — never `order.urgent` directly — so it is right today without a
+  scheduled job, and a delivered order does not turn red once its date passes.
 - **"Today" means today in Pakistan.** Use `today()` from `lib/cms-core.ts`, not
   `new Date()` — the server runs in UTC and would roll the date at 5am PKT.
 - Anything on a *public* page derived from "now" must be read on the client;

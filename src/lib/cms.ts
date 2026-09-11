@@ -2,11 +2,11 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { openOrderStatuses } from "@/content/cms";
 import { claimsAreAdmin } from "@/lib/auth";
-import { addDays, monthRange, today } from "@/lib/cms-core";
+import { URGENT_WITHIN_DAYS, addDays, monthRange, today } from "@/lib/cms-core";
 import { readAll } from "@/lib/cms-read";
 import { availableCredit } from "@/lib/accounting-core";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import type { Client, Database, Expense, Order, Invoice, BalanceEntry, LabourEntry, ShopSale, ShopInvoice, ShopExpense } from "@/types/database";
+import type { Client, Database, Expense, Order, Invoice, BalanceEntry, LabourEntry, ShopSale, ShopInvoice, ShopExpense, InventoryItem } from "@/types/database";
 
 export async function getCmsSession(): Promise<{ supabase: SupabaseClient<Database>; userId: string } | null> {
   const supabase = await createSupabaseServerClient();
@@ -62,6 +62,23 @@ export async function getDueSoon(days = 7): Promise<OrderWithClient[]> {
   const data = await readAll((from, to) => supabase.from("orders").select(ORDER_LIST_SELECT)
     .in("status", [...openOrderStatuses]).not("expected_date", "is", null)
     .lte("expected_date", addDays(today(), days)).order("expected_date").order("id").range(from, to));
+  return (data ?? []) as OrderWithClient[];
+}
+
+/** Ticked by hand, or open and within two days of delivery. Soonest first. */
+/** Every order once, for the dashboard's counts. Small business, small table. */
+export async function getAllOrders(): Promise<OrderWithClient[]> {
+  return getOrders();
+}
+
+export async function getUrgentOrders(): Promise<OrderWithClient[]> {
+  const supabase = await createSupabaseServerClient();
+  if (!supabase) return [];
+  const cutoff = addDays(today(), URGENT_WITHIN_DAYS);
+  const data = await readAll((from, to) => supabase.from("orders").select(ORDER_LIST_SELECT)
+    .in("status", [...openOrderStatuses])
+    .or(`urgent.eq.true,expected_date.lte.${cutoff}`)
+    .order("expected_date", { ascending: true, nullsFirst: false }).order("id").range(from, to));
   return (data ?? []) as OrderWithClient[];
 }
 
@@ -157,6 +174,29 @@ export async function getShopInvoice(id: string): Promise<ShopInvoice | null> {
   const { data, error } = await supabase.from("shop_invoices").select("*").eq("id", id).maybeSingle();
   if (error) { console.error("Could not load shop invoice", { code: error.code, message: error.message }); return null; }
   return data;
+}
+
+export async function getInventory(): Promise<InventoryItem[]> {
+  const supabase = await createSupabaseServerClient();
+  if (!supabase) return [];
+  return await readAll((from, to) => supabase.from("inventory_items").select("*")
+    .order("item_no").range(from, to)) ?? [];
+}
+
+export async function getInventoryItem(id: string): Promise<InventoryItem | null> {
+  const supabase = await createSupabaseServerClient();
+  if (!supabase) return null;
+  const { data, error } = await supabase.from("inventory_items").select("*").eq("id", id).maybeSingle();
+  if (error) { console.error("Could not load inventory item", { code: error.code, message: error.message }); return null; }
+  return data;
+}
+
+/** Drives the dashboard warning; empty when the inventory table is absent. */
+export async function getOutOfStock(): Promise<InventoryItem[]> {
+  const supabase = await createSupabaseServerClient();
+  if (!supabase) return [];
+  return await readAll((from, to) => supabase.from("inventory_items").select("*")
+    .eq("quantity", 0).order("name").range(from, to)) ?? [];
 }
 
 export async function getFinancialTotals() {
