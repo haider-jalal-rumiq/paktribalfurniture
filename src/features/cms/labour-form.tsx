@@ -15,6 +15,9 @@ import type { LabourEntry } from "@/types/database";
 /** Every money input is a controlled string so the payslip can total live. */
 const money = (value: number | undefined, fallback = "0") => (value === undefined ? fallback : String(value));
 
+/** Optional money input: blank reads as zero, matching optionalAmountField(). */
+const optionalAmount = (value: string) => (value.trim() === "" ? 0 : parseAmount(value));
+
 export function LabourForm({ entry, month }: { entry?: LabourEntry; month?: string }) {
   const router = useRouter(), requestId = useRef(entry?.id ?? "");
   const [payBasis, setPayBasis] = useState<LabourPayBasis>(entry?.pay_basis ?? "monthly");
@@ -34,11 +37,11 @@ export function LabourForm({ entry, month }: { entry?: LabourEntry; month?: stri
 
   const salaryAmount = parseAmount(payBasis === "monthly" ? salary : "0");
   const perDayAmount = parseAmount(payBasis === "per_item" ? "0" : perDay);
-  const itemRateAmount = parseAmount(payBasis === "daily" || payBasis === "per_item" ? itemRate : "0");
+  const itemRateAmount = optionalAmount(payBasis === "daily" || payBasis === "per_item" ? itemRate : "0");
   const otRateAmount = parseAmount(otRate);
   const leaveDeductionAmount = parseAmount(payBasis === "monthly" ? leaveDeduction : "0");
-  const deductionAmount = parseAmount(deduction);
-  const advanceAmount = parseAmount(advance);
+  const deductionAmount = optionalAmount(deduction);
+  const advanceAmount = optionalAmount(advance);
   const paidAmount = parseAmount(paid);
   const activeDays = Number(payBasis === "daily" ? daysWorked : 0);
   const activeItems = Number(payBasis === "daily" || payBasis === "per_item" ? itemCount : 0);
@@ -124,11 +127,11 @@ export function LabourForm({ entry, month }: { entry?: LabourEntry; month?: stri
         <Field label="Rate per day (Rs)" htmlFor="perDaySalary" hint={totals ? `Regular pay ${formatPkr(totals.regularPay)}` : undefined}>
           <Input id="perDaySalary" name="perDaySalary" inputMode="numeric" value={perDay} onChange={(event) => setPerDay(event.target.value)} required />
         </Field>
-        <Field label="Work per item (optional)" htmlFor="itemCount" hint="Enter 0 when there was no item-based work.">
-          <Input id="itemCount" name="itemCount" type="number" min={0} max={1000000} step={1} value={itemCount} onChange={(event) => setItemCount(event.target.value)} required />
+        <Field label="Work item" htmlFor="itemCount" hint="Optional. Leave blank when there was no item work.">
+          <Input id="itemCount" name="itemCount" type="number" min={0} max={1000000} step={1} value={itemCount} onChange={(event) => setItemCount(event.target.value)} />
         </Field>
-        <Field label="Payment per item (Rs)" htmlFor="itemRate" hint={totals ? `Item payment ${formatPkr(totals.itemPay)}` : undefined}>
-          <Input id="itemRate" name="itemRate" inputMode="numeric" value={itemRate} onChange={(event) => setItemRate(event.target.value)} required />
+        <Field label="Item payment (Rs)" htmlFor="itemRate" hint={totals && totals.itemPay > 0n ? `Items total ${formatPkr(totals.itemPay)}` : "Optional. Rupees for each item completed."}>
+          <Input id="itemRate" name="itemRate" inputMode="numeric" value={itemRate} onChange={(event) => setItemRate(event.target.value)} />
         </Field>
         <input type="hidden" name="salary" value="0" /><input type="hidden" name="leaves" value="0" /><input type="hidden" name="leaveDeduction" value="0" />
       </>}
@@ -153,8 +156,8 @@ export function LabourForm({ entry, month }: { entry?: LabourEntry; month?: stri
       {payBasis === "monthly" && <Field label="Leave deduction (Rs)" htmlFor="leaveDeduction" hint="The amount to deduct for the leave days entered above.">
         <Input id="leaveDeduction" name="leaveDeduction" inputMode="numeric" value={leaveDeduction} onChange={(event) => setLeaveDeduction(event.target.value)} required />
       </Field>}
-      <Field label="Other deduction (Rs)" htmlFor="deduction" hint="Fines, damages, advances taken elsewhere.">
-        <Input id="deduction" name="deduction" inputMode="numeric" value={deduction} onChange={(event) => setDeduction(event.target.value)} required />
+      <Field label="Other deduction (Rs)" htmlFor="deduction" hint="Optional. Fines, damages, advances taken elsewhere.">
+        <Input id="deduction" name="deduction" inputMode="numeric" value={deduction} onChange={(event) => setDeduction(event.target.value)} />
       </Field>
       <Field label="Other deduction notes" htmlFor="deductionNotes" hint="Explain what the other deduction is for." className="sm:col-span-2">
         <Textarea id="deductionNotes" name="deductionNotes" maxLength={1000} defaultValue={entry?.deduction_notes ?? ""} />
@@ -162,7 +165,7 @@ export function LabourForm({ entry, month }: { entry?: LabourEntry; month?: stri
     </FormSection>
 
     <FormSection title="Payments">
-      <Field label="Advance paid (Rs)" htmlFor="advance"><Input id="advance" name="advance" inputMode="numeric" value={advance} onChange={(event) => setAdvance(event.target.value)} required /></Field>
+      <Field label="Advance paid (Rs)" htmlFor="advance" hint="Optional."><Input id="advance" name="advance" inputMode="numeric" value={advance} onChange={(event) => setAdvance(event.target.value)} /></Field>
       <Field label="Amount paid, excluding advance (Rs)" htmlFor="salaryPaid"><Input id="salaryPaid" name="salaryPaid" inputMode="numeric" value={paid} onChange={(event) => setPaid(event.target.value)} required /></Field>
       <Field label="General notes" htmlFor="labourNotes" className="sm:col-span-2"><Textarea id="labourNotes" name="notes" maxLength={1000} defaultValue={entry?.notes ?? ""} /></Field>
     </FormSection>

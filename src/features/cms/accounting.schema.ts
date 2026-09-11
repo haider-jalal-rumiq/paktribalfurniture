@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 import { labourPayBasisValues } from "@/content/cms";
-import { amountField, dateField, optionalText } from "@/features/cms/fields";
+import { amountField, dateField, optionalAmountField, optionalText } from "@/features/cms/fields";
 import { invoiceTotal, labourTotals } from "@/lib/accounting-core";
 import { MAX_AMOUNT } from "@/lib/money";
 
@@ -47,14 +47,14 @@ export const labourInputSchema = z.object({
   salary: amountField("Enter the salary in whole rupees", { allowZero: true }),
   perDaySalary: amountField("Enter the per-day salary in whole rupees", { allowZero: true }),
   daysWorked: z.coerce.number().int().min(0, "Days worked cannot be negative").max(31, "Days worked cannot exceed 31"),
-  itemCount: z.coerce.number().int().min(0, "Items completed cannot be negative").max(1_000_000, "That is too many items"),
-  itemRate: amountField("Enter the rate per item in whole rupees", { allowZero: true }),
+  itemCount: z.coerce.number().int().min(0, "Item work cannot be negative").max(1_000_000, "That is too many items"),
+  itemRate: optionalAmountField("Enter the item payment in whole rupees"),
   otHours: z.coerce.number().int().min(0, "Overtime cannot be negative").max(1000, "That is too many hours"),
   otRate: amountField("Enter the overtime rate per hour in whole rupees", { allowZero: true }),
   leaveDeduction: amountField("Enter the leave deduction in whole rupees", { allowZero: true }),
-  deduction: amountField("Enter any other deduction in whole rupees", { allowZero: true }),
+  deduction: optionalAmountField("Enter any other deduction in whole rupees"),
   deductionNotes: optionalText(1000),
-  advance: amountField("Enter the advance in whole rupees", { allowZero: true }),
+  advance: optionalAmountField("Enter the advance in whole rupees"),
   salaryPaid: amountField("Enter salary paid in whole rupees", { allowZero: true }),
   leaves: z.coerce.number().int().min(0).max(31),
   notes: optionalText(1000),
