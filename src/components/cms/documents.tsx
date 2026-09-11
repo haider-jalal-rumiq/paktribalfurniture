@@ -106,7 +106,7 @@ export function LabourDocument({ entries, month }: { entries: LabourEntry[]; mon
             {labourPayBasisLabel(entry.pay_basis)} · {entry.pay_basis === "monthly"
               ? `Per day ${formatPkr(entry.per_day_salary)} · ${entry.leaves} ${entry.leaves === 1 ? "leave" : "leaves"} · leave deduction ${formatPkr(entry.leave_deduction)}`
               : entry.pay_basis === "daily"
-                ? `${entry.days_worked} days @ ${formatPkr(entry.per_day_salary)}${entry.item_count > 0 ? ` · ${entry.item_count} items @ ${formatPkr(entry.item_rate)}` : ""}`
+                ? `${entry.days_worked} days @ ${formatPkr(entry.per_day_salary)}${entry.item_rate > 0 ? ` · item work ${formatPkr(entry.item_rate)}${entry.item_count > 0 ? ` (${entry.item_count} items)` : ""}` : ""}`
                 : `${entry.item_count} items @ ${formatPkr(entry.item_rate)}`}
             {entry.ot_hours > 0 ? ` · OT ${entry.ot_hours} h @ ${formatPkr(entry.ot_rate)}` : ""}
             {entry.deduction > 0 ? ` · other deduction ${formatPkr(entry.deduction)}${entry.deduction_notes ? ` (${entry.deduction_notes})` : ""}` : ""}

@@ -101,9 +101,14 @@ export function labourTotals(entry: {
   const dailyPay = entry.pay_basis === "daily"
     ? BigInt(entry.days_worked) * BigInt(entry.per_day_salary)
     : 0n;
-  const itemPay = entry.pay_basis === "daily" || entry.pay_basis === "per_item"
-    ? BigInt(entry.item_count) * BigInt(entry.item_rate)
-    : 0n;
+  // A daily worker's item payment is the lump sum written down; the item count
+  // beside it only records how much work that covered, so it is NOT a rate to
+  // multiply. A per-item worker genuinely earns a rate for each item completed.
+  const itemPay = entry.pay_basis === "daily"
+    ? BigInt(entry.item_rate)
+    : entry.pay_basis === "per_item"
+      ? BigInt(entry.item_count) * BigInt(entry.item_rate)
+      : 0n;
   const regularPay = entry.pay_basis === "monthly" ? BigInt(entry.salary) : dailyPay + itemPay;
   const leaveDeduction = BigInt(entry.leave_deduction);
   const overtime = BigInt(entry.ot_hours) * BigInt(entry.ot_rate);

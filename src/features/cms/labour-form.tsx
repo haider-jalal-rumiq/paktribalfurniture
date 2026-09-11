@@ -130,7 +130,7 @@ export function LabourForm({ entry, month }: { entry?: LabourEntry; month?: stri
         <Field label="Work item" htmlFor="itemCount" hint="Optional. Leave blank when there was no item work.">
           <Input id="itemCount" name="itemCount" type="number" min={0} max={1000000} step={1} value={itemCount} onChange={(event) => setItemCount(event.target.value)} />
         </Field>
-        <Field label="Item payment (Rs)" htmlFor="itemRate" hint={totals && totals.itemPay > 0n ? `Items total ${formatPkr(totals.itemPay)}` : "Optional. Rupees for each item completed."}>
+        <Field label="Item payment (Rs)" htmlFor="itemRate" hint="Optional. Added as written — not multiplied by the work item count.">
           <Input id="itemRate" name="itemRate" inputMode="numeric" value={itemRate} onChange={(event) => setItemRate(event.target.value)} />
         </Field>
         <input type="hidden" name="salary" value="0" /><input type="hidden" name="leaves" value="0" /><input type="hidden" name="leaveDeduction" value="0" />
@@ -176,7 +176,8 @@ export function LabourForm({ entry, month }: { entry?: LabourEntry; month?: stri
         <dl className="mt-3 space-y-2 text-sm">
           {payBasis === "monthly" && line("Monthly salary", formatPkr(totals.regularPay))}
           {payBasis === "daily" && line(`Days worked (${activeDays} × ${formatPkr(perDayAmount!)})`, formatPkr(totals.dailyPay))}
-          {(payBasis === "per_item" || totals.itemPay > 0n) && line(`Items completed (${activeItems} × ${formatPkr(itemRateAmount!)})`, `${payBasis === "daily" ? "+ " : ""}${formatPkr(totals.itemPay)}`)}
+          {payBasis === "daily" && totals.itemPay > 0n && line(activeItems > 0 ? `Item work (${activeItems} ${activeItems === 1 ? "item" : "items"})` : "Item work", `+ ${formatPkr(totals.itemPay)}`)}
+          {payBasis === "per_item" && line(`Items completed (${activeItems} × ${formatPkr(itemRateAmount!)})`, formatPkr(totals.itemPay))}
           {line("Overtime", `+ ${formatPkr(totals.overtime)}`)}
           {payBasis === "monthly" && line(`Leave deduction (${activeLeaves} ${activeLeaves === 1 ? "day" : "days"})`, `− ${formatPkr(totals.leaveDeduction)}`)}
           {line("Other deduction", `− ${formatPkr(deductionAmount!)}`)}

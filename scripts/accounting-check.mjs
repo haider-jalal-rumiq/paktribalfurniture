@@ -48,7 +48,11 @@ check(labourTotals(shift), { regularPay: 45000n, dailyPay: 0n, itemPay: 0n, leav
 check(labourTotals({ ...shift, leaves: 0, leave_deduction: 0, ot_hours: 0, deduction: 0 }).total, 45000n, "Bare salary when nothing is added or taken off");
 check(labourTotals({ ...shift, salary: 1000, deduction: 5000, ot_hours: 0, leaves: 0, leave_deduction: 0 }).total, -4000n, "Over-deduction shows as negative rather than clamping to zero");
 check(labourTotals({ ...shift, advance: 0, salary_paid: 0 }).balance, 44040n, "Nothing paid yet leaves the whole total owing");
-check(labourTotals({ ...shift, pay_basis: "daily", salary: 0, days_worked: 24, per_day_salary: 1800, item_count: 4, item_rate: 900, leaves: 0, leave_deduction: 0 }).regularPay, 46800n, "Daily worker pay includes days worked and optional item work");
+const daily = { ...shift, pay_basis: "daily", salary: 0, days_worked: 24, per_day_salary: 1800, item_count: 4, item_rate: 900, leaves: 0, leave_deduction: 0 };
+check(labourTotals(daily).regularPay, 44100n, "A daily worker's item payment is added as written, never multiplied by the item count");
+check(labourTotals(daily).itemPay, 900n, "Item payment is the lump sum typed in");
+check(labourTotals({ ...daily, item_count: 40 }).regularPay, 44100n, "Changing the item count alone cannot change what is paid");
+check(labourTotals({ ...daily, item_count: 0, item_rate: 0 }).regularPay, 43200n, "Days alone when there was no item work");
 check(labourTotals({ ...shift, pay_basis: "per_item", salary: 0, per_day_salary: 0, item_count: 18, item_rate: 900, leaves: 0, leave_deduction: 0 }).regularPay, 16200n, "Per-item worker pay is items completed times the item rate");
 
 check(partnerSplit(11500n, 30n), { minor: 3450n, major: 8050n }, "30/70 split");
