@@ -96,3 +96,16 @@ export const labourInputSchema = z.object({
     });
   }
 });
+
+export const woodInputSchema = z.object({
+  id: z.uuid(),
+  purchaserName: z.string().trim().min(2, "Enter the wood purchaser's name").max(140),
+  period: z.string().regex(/^(19|[2-9]\d)\d{2}-(0[1-9]|1[0-2])$/, "Choose the purchase month"),
+  paidOn: dateField("Enter a valid payment date"),
+  purchasedAmount: amountField("Enter the wood purchased amount in whole rupees", { allowZero: true }),
+  paidAmount: amountField("Enter the payment made in whole rupees", { allowZero: true }),
+  notes: optionalText(1000),
+}).refine((value) => value.purchasedAmount > 0 || value.paidAmount > 0, {
+  message: "Enter a purchase amount, a payment amount, or both",
+  path: ["purchasedAmount"],
+});

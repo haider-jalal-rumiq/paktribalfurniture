@@ -21,6 +21,7 @@ export function cmsFixture() {
     clients: [client, school], orders: [order, urgentOrder, schoolOrder], expenses: [{ id: id(), spent_on: "2026-09-09", category: "material", amount: 7000, note: "Test expense", order_id: null, created_at: stamp }],
     order_payments: [], balance_entries: [{ id: id(), received_on: "2026-09-09", amount: 100000, note: "Test opening balance", created_at: stamp }],
     labour_entries: [{ id: id(), name: "QA Worker", period: "2026-09-01", paid_on: "2026-09-09", pay_basis: "monthly", salary: 40000, per_day_salary: 1000, days_worked: 0, item_count: 0, item_rate: 0, ot_hours: 0, ot_rate: 0, leave_deduction: 2000, deduction: 0, deduction_notes: null, total_amount: 38000, advance: 10000, salary_paid: 5000, leaves: 2, notes: "Agreed adjustment", created_at: stamp, updated_at: stamp }],
+    wood_entries: [],
     invoices: [invoice, { ...invoice, id: id(), invoice_no: 2, issued_on: "2026-09-26", items: [{ ...invoice.items[0], quantity: 1, amount: 22000 }], total_amount: 22000 }, { ...invoice, id: id(), invoice_no: 3, client_id: school.id, client_name: school.name, issued_on: "2026-09-27", items: [{ ...invoice.items[0], quantity: 1, amount: 500 }], total_amount: 500 }],
     shop_sales: [], shop_invoices: [], shop_expenses: [], products: [], inventory_items: [],
   };
@@ -35,7 +36,7 @@ export function cmsFixture() {
     if (url.pathname === "/auth/v1/logout") return send({});
     if (url.pathname === "/rest/v1/rpc/cms_financial_totals") {
       const sum = (rows, fn) => rows.reduce((n, row) => n + BigInt(fn(row)), 0n).toString();
-      return send({ added: sum(db.balance_entries, r => r.amount), expenses: sum(db.expenses, r => r.amount), labourPaid: sum(db.labour_entries, r => r.advance + r.salary_paid), sales: sum(db.invoices.filter(r => r.status === "issued"), r => r.total_amount), openOrders: db.orders.filter(r => ["pending", "ready", "in_progress"].includes(r.status)).length });
+      return send({ added: sum(db.balance_entries, r => r.amount), expenses: sum(db.expenses, r => r.amount), labourPaid: sum(db.labour_entries, r => r.advance + r.salary_paid), woodPaid: sum(db.wood_entries, r => r.paid_amount), sales: sum(db.invoices.filter(r => r.status === "issued"), r => r.total_amount), openOrders: db.orders.filter(r => ["pending", "ready", "in_progress"].includes(r.status)).length });
     }
     const table = url.pathname.split("/").at(-1);
     if (!db[table]) return send({ message: `Unknown fixture table ${table}` }, 404);
@@ -44,6 +45,7 @@ export function cmsFixture() {
       const [op, ...parts] = expr.split("."); const value = parts.join(".");
       if (op === "eq") return String(row[key]) === value;
       if (op === "gte") return row[key] >= value;
+      if (op === "gt") return row[key] > value;
       if (op === "lte") return row[key] <= value;
       if (op === "lt") return row[key] < value;
       if (op === "in") return value.slice(1,-1).split(",").includes(row[key]);

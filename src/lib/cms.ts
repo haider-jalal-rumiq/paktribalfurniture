@@ -6,7 +6,7 @@ import { URGENT_WITHIN_DAYS, addDays, monthRange, today } from "@/lib/cms-core";
 import { readAll } from "@/lib/cms-read";
 import { availableCredit } from "@/lib/accounting-core";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import type { Client, Database, Expense, Order, Invoice, BalanceEntry, LabourEntry, ShopSale, ShopInvoice, ShopExpense, InventoryItem } from "@/types/database";
+import type { Client, Database, Expense, Order, Invoice, BalanceEntry, LabourEntry, WoodEntry, ShopSale, ShopInvoice, ShopExpense, InventoryItem } from "@/types/database";
 
 export async function getCmsSession(): Promise<{ supabase: SupabaseClient<Database>; userId: string } | null> {
   const supabase = await createSupabaseServerClient();
@@ -145,6 +145,41 @@ export async function getLabourEntry(id: string): Promise<LabourEntry | null> {
   return data;
 }
 
+export async function getWoodEntries(month: string, byPaymentDate = false): Promise<WoodEntry[]> {
+  const supabase = await createSupabaseServerClient();
+  if (!supabase) return [];
+  const { start, end } = monthRange(month);
+  const field = byPaymentDate ? "paid_on" : "period";
+  return await readAll((from, to) => {
+    let query = supabase.from("wood_entries").select("*").gte(field, start).lt(field, end);
+    if (byPaymentDate) query = query.gt("paid_amount", 0);
+    return query.order("purchaser_name").order("period", { ascending: false }).order("id").range(from, to);
+  }) ?? [];
+}
+
+export async function getAllWoodEntries(): Promise<WoodEntry[]> {
+  const supabase = await createSupabaseServerClient();
+  if (!supabase) return [];
+  return await readAll((from, to) => supabase.from("wood_entries").select("*")
+    .order("period", { ascending: false }).order("purchaser_name").order("id").range(from, to)) ?? [];
+}
+
+export async function getWoodMonths(): Promise<string[]> {
+  const supabase = await createSupabaseServerClient();
+  if (!supabase) return [];
+  const rows = await readAll<{ period: string }>((from, to) => supabase.from("wood_entries")
+    .select("period").order("period", { ascending: false }).range(from, to));
+  return [...new Set((rows ?? []).map((row) => row.period.slice(0, 7)))];
+}
+
+export async function getWoodEntry(id: string): Promise<WoodEntry | null> {
+  const supabase = await createSupabaseServerClient();
+  if (!supabase) return null;
+  const { data, error } = await supabase.from("wood_entries").select("*").eq("id", id).maybeSingle();
+  if (error) { console.error("Could not load wood entry", { code: error.code, message: error.message }); return null; }
+  return data;
+}
+
 /** The whole shop ledger. Newest first; the printed serial is sale_no, not the row index. */
 export async function getShopSales(): Promise<ShopSale[]> {
   const supabase = await createSupabaseServerClient();
@@ -208,9 +243,9 @@ export async function getFinancialTotals() {
     console.error("Could not load financial totals", { code: error?.code, message: error?.message });
     return null;
   }
-  const values = data as { added: string; expenses: string; labourPaid: string; sales: string; openOrders: number };
-  const added = BigInt(values.added), expenses = BigInt(values.expenses), labourPaid = BigInt(values.labourPaid);
-  return { added, expenses: expenses + labourPaid, credit: availableCredit(added, expenses, labourPaid), sales: BigInt(values.sales), openOrders: values.openOrders };
+  const values = data as { added: string; expenses: string; labourPaid: string; woodPaid?: string; sales: string; openOrders: number };
+  const added = BigInt(values.added), expenses = BigInt(values.expenses), labourPaid = BigInt(values.labourPaid), woodPaid = BigInt(values.woodPaid ?? "0");
+  return { added, expenses: expenses + labourPaid + woodPaid, credit: availableCredit(added, expenses, labourPaid, woodPaid), sales: BigInt(values.sales), openOrders: values.openOrders };
 }
 
 export * from "@/lib/cms-core";

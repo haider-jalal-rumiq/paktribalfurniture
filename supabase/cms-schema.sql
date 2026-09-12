@@ -223,6 +223,19 @@ create table if not exists public.labour_entries (
   check (advance + salary_paid <= total_amount)
 );
 
+create table if not exists public.wood_entries (
+  id uuid primary key default gen_random_uuid(),
+  purchaser_name text not null check (char_length(btrim(purchaser_name)) between 2 and 140),
+  period date not null check (extract(day from period) = 1),
+  paid_on date not null default (now() at time zone 'Asia/Karachi')::date,
+  purchased_amount bigint not null default 0 check (purchased_amount between 0 and 999999999999),
+  paid_amount bigint not null default 0 check (paid_amount between 0 and 999999999999),
+  notes text check (char_length(notes) <= 1000),
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  check (purchased_amount > 0 or paid_amount > 0)
+);
+
 -- Validates the lines and computes the stored bigint total in one atomic write.
 create or replace function public.cms_invoice_total(entries jsonb)
 returns bigint language plpgsql immutable security invoker set search_path = '' as $$
@@ -324,16 +337,21 @@ alter table public.labour_entries add constraint labour_entries_total_amount_che
 create index if not exists balance_entries_date_idx on public.balance_entries (received_on desc, id);
 create index if not exists labour_entries_period_idx on public.labour_entries (period, name, id);
 create index if not exists labour_entries_paid_idx on public.labour_entries (paid_on);
+create index if not exists wood_entries_period_idx on public.wood_entries (period, purchaser_name, id);
+create index if not exists wood_entries_paid_idx on public.wood_entries (paid_on);
 create index if not exists invoices_client_date_idx on public.invoices (client_id, issued_on desc, id);
 create index if not exists invoices_date_idx on public.invoices (issued_on desc, id);
 
 drop trigger if exists labour_entries_updated_at on public.labour_entries;
 create trigger labour_entries_updated_at before update on public.labour_entries for each row execute function public.set_updated_at();
+drop trigger if exists wood_entries_updated_at on public.wood_entries;
+create trigger wood_entries_updated_at before update on public.wood_entries for each row execute function public.set_updated_at();
 drop trigger if exists invoices_updated_at on public.invoices;
 create trigger invoices_updated_at before update on public.invoices for each row execute function public.set_updated_at();
 
 alter table public.balance_entries enable row level security;
 alter table public.labour_entries enable row level security;
+alter table public.wood_entries enable row level security;
 alter table public.invoices enable row level security;
 
 drop policy if exists "Admins manage balances" on public.balance_entries;
@@ -344,12 +362,17 @@ drop policy if exists "Admins manage labour" on public.labour_entries;
 create policy "Admins manage labour" on public.labour_entries for all to authenticated
 using (coalesce((select auth.jwt()->'app_metadata'->>'role'), '') = 'admin')
 with check (coalesce((select auth.jwt()->'app_metadata'->>'role'), '') = 'admin');
+drop policy if exists "Admins manage wood" on public.wood_entries;
+create policy "Admins manage wood" on public.wood_entries for all to authenticated
+using (coalesce((select auth.jwt())->'app_metadata'->>'role', '') = 'admin')
+with check (coalesce((select auth.jwt())->'app_metadata'->>'role', '') = 'admin');
 drop policy if exists "Admins manage invoices" on public.invoices;
 create policy "Admins manage invoices" on public.invoices for all to authenticated
 using (coalesce((select auth.jwt()->'app_metadata'->>'role'), '') = 'admin')
 with check (coalesce((select auth.jwt()->'app_metadata'->>'role'), '') = 'admin');
 
-grant select, insert, update, delete on public.balance_entries, public.labour_entries, public.invoices to authenticated;
+revoke all on public.wood_entries from public, anon;
+grant select, insert, update, delete on public.balance_entries, public.labour_entries, public.wood_entries, public.invoices to authenticated;
 grant usage, select on sequence public.invoices_invoice_no_seq to authenticated;
 revoke all on function public.cms_invoice_total(jsonb), public.cms_valid_order_items(jsonb) from public, anon;
 grant execute on function public.cms_invoice_total(jsonb), public.cms_valid_order_items(jsonb) to authenticated, service_role;
@@ -362,6 +385,7 @@ returns jsonb language sql stable security invoker set search_path = '' as $$
     'added', (select coalesce(sum(amount),0)::text from public.balance_entries),
     'expenses', (select coalesce(sum(amount),0)::text from public.expenses),
     'labourPaid', (select coalesce(sum(advance + salary_paid),0)::text from public.labour_entries),
+    'woodPaid', (select coalesce(sum(paid_amount),0)::text from public.wood_entries),
     'sales', (select coalesce(sum(total_amount),0)::text from public.invoices where status = 'issued'),
     'openOrders', (select count(*) from public.orders where status in ('pending','in_progress','ready'))
   );

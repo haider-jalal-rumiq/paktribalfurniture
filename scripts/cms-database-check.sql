@@ -25,6 +25,9 @@ begin
   insert into public.expenses (amount,category) values (7000,'Any custom category');
   insert into public.labour_entries (name,period,salary,total_amount,advance,salary_paid,leaves)
     values ('Verification labour','2026-09-01',40000,38000,10000,5000,2);
+  insert into public.wood_entries (purchaser_name,period,paid_on,purchased_amount,paid_amount)
+    values ('Verification timber supplier','2026-09-01','2026-09-20',20000,10000),
+           ('Verification timber supplier','2026-10-01','2026-10-20',30000,20000);
   insert into public.invoices (invoice_no,client_id,client_name,issued_on,items) overriding system value
     values (-900001,client_uuid,'Client snapshot','2026-09-20',jsonb_build_array(jsonb_build_object('id',item_uuid,'item','Dining table','quantity',2,'amount',12500,'source','Order'),jsonb_build_object('id',gen_random_uuid(),'item','Chair','quantity',3,'amount',4000,'source','Stock')))
     returning id into invoice_uuid;
@@ -33,6 +36,8 @@ begin
   assert (totals->>'added')::bigint - (base->>'added')::bigint = 100000, 'Added funds';
   assert (totals->>'expenses')::bigint - (base->>'expenses')::bigint = 7000, 'Custom expenses';
   assert (totals->>'labourPaid')::bigint - (base->>'labourPaid')::bigint = 15000, 'Labour actual payments';
+  assert (totals->>'woodPaid')::bigint - (base->>'woodPaid')::bigint = 30000, 'Wood actual payments';
+  assert (select sum(purchased_amount-paid_amount) from public.wood_entries where purchaser_name='Verification timber supplier') = 20000, 'Wood balance carries across months';
   assert (totals->>'sales')::bigint - (base->>'sales')::bigint = 37000, 'Invoice sales';
   assert (select count(*) from public.invoices where client_id=client_uuid and issued_on >= '2026-09-20' and issued_on <= '2026-09-20') = 1, 'Inclusive dates';
   update public.invoices set items=jsonb_build_array(jsonb_build_object('id',item_uuid,'item','Dining table','quantity',2,'amount',15000,'source','Order')) where id=invoice_uuid;
@@ -56,6 +61,7 @@ begin
   perform set_config('request.jwt.claims','{"role":"authenticated","app_metadata":{}}',true);
   assert (select count(*) from public.balance_entries)=0, 'Non-admin cannot read balances';
   assert (select count(*) from public.labour_entries)=0, 'Non-admin cannot read labour';
+  assert (select count(*) from public.wood_entries)=0, 'Non-admin cannot read wood ledger';
   assert (select count(*) from public.invoices)=0, 'Non-admin cannot read invoices';
   rejected:=false;
   begin
@@ -66,4 +72,4 @@ begin
 end;
 $$;
 rollback;
-select '19 transaction assertions passed; all test records rolled back' as result;
+select '22 transaction assertions passed; all test records rolled back' as result;

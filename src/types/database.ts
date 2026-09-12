@@ -22,6 +22,11 @@ export type LabourEntry = {
   total_amount: number; advance: number; salary_paid: number; leaves: number;
   notes: string | null; created_at: string; updated_at: string;
 };
+export type WoodEntry = {
+  id: string; purchaser_name: string; period: string; paid_on: string;
+  purchased_amount: number; paid_amount: number; notes: string | null;
+  created_at: string; updated_at: string;
+};
 export type Invoice = {
   id: string; invoice_no: number; client_id: string; client_name: string;
   client_address: string | null; client_phone: string | null; issued_on: string;
@@ -72,6 +77,7 @@ export interface Database {
         Relationships: [];
       };
       labour_entries: TableShape<LabourEntry, "name" | "period" | "salary" | "total_amount">;
+      wood_entries: TableShape<WoodEntry, "purchaser_name" | "period" | "purchased_amount" | "paid_amount">;
       invoices: {
         Row: Invoice;
         Insert: Omit<Partial<Invoice>, "total_amount"> & Pick<Invoice, "client_id" | "client_name" | "items">;

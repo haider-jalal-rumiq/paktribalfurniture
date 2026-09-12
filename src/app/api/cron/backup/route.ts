@@ -46,6 +46,7 @@ export async function GET(request: Request) {
     orders: bundle.orders.length,
     payments: bundle.order_payments.length,
     expenses: bundle.expenses.length,
+    woodEntries: bundle.wood_entries.length,
     pruned: stale.length,
   });
 }
