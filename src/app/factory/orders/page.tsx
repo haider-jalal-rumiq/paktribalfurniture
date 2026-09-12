@@ -7,7 +7,8 @@ import { Button, ButtonLink } from "@/components/ui/button";
 import { Field, Select } from "@/components/ui/field";
 import { orderStatuses, orderStatusLabel } from "@/content/cms";
 import { getClients, getOrders } from "@/lib/cms";
-import { isUrgentOrder, itemMatchesStatus, orderMatchesFilters } from "@/lib/orders";
+import { itemMatchesStatus, orderMatchesFilters } from "@/lib/order-filters";
+import { isUrgentOrder } from "@/lib/orders";
 import { cn } from "@/lib/utils";
 
 export const metadata = { title: "Orders" };
@@ -18,7 +19,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
   const status = params.status === "urgent" || orderStatuses.some((row) => row.value === params.status) ? params.status : undefined;
   const clients = await getClients();
   const clientId = clients.some((row) => row.id === params.client) ? params.client : undefined;
-  const orders = (await getOrders()).filter((order) => orderMatchesFilters(order, { status, clientId, byItems }));
+  const orders = (await getOrders()).filter((order) => orderMatchesFilters(order, { status, clientId, byItems }, isUrgentOrder(order)));
   const shown = clients.filter((client) => (!clientId || client.id === clientId) && (!status || orders.some((row) => row.client_id === client.id)));
 
   // Two ways to read the same orders: grouped by client, or every item flat.

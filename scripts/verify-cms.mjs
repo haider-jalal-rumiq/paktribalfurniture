@@ -56,8 +56,8 @@ try {
   await page.getByLabel("Password", { exact: true }).fill("fixture-only");
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
   await page.waitForURL(BASE + "/factory");
-  await page.getByText("Rs 78,000", { exact: true }).waitFor();
-  check("Credit subtracts general expenses and paid labour", true);
+  await page.getByText("Rs 22,000", { exact: true }).waitFor();
+  check("Expenses include general expenses and paid labour", true);
   check("Invoices contribute to sales", await page.getByText("Rs 34,500", { exact: true }).count() === 1);
   check("Dark system preference still renders white", await page.evaluate(() => getComputedStyle(document.body).backgroundColor === "rgb(255, 255, 255)" && getComputedStyle(document.documentElement).colorScheme === "light"));
   await page.screenshot({ path: `${OUT}/dashboard-desktop.png`, fullPage: true });
@@ -77,7 +77,7 @@ try {
   check("By item client filter shows only that client's three items", await page.locator(".document-table tbody tr").count() === 3 && await page.getByText("Bookcase", { exact: true }).count() === 0);
   await page.getByLabel("Client", { exact: true }).selectOption("");
   await page.getByRole("button", { name: "Filter", exact: true }).click();
-  await page.waitForURL(url => url.searchParams.get("view") === "items" && !url.searchParams.has("client"));
+  await page.waitForURL(url => url.searchParams.get("view") === "items" && url.searchParams.get("client") === "");
   check("All clients restores every item line", await page.locator(".document-table tbody tr").count() === 4);
   await page.getByLabel("Item status / urgency", { exact: true }).selectOption("pending");
   await page.getByRole("button", { name: "Filter", exact: true }).click();
@@ -177,8 +177,8 @@ try {
   const replay = await context.request.post(`${BASE}/api/cms/invoices`, { data: { id: created.id, clientId: created.client_id, issuedOn: created.issued_on, notes: "", items: created.items } });
   check("Invoice retries do not create duplicate sales", replay.ok() && fixture.db.invoices.length === 4);
   await go(page, "/factory");
-  await page.getByText("Rs 79,000", { exact: true }).waitFor();
-  check("Invoices increase sales without increasing Credit", await page.getByText("Rs 39,500", { exact: true }).count() === 1);
+  await page.getByText("Rs 26,000", { exact: true }).waitFor();
+  check("Invoices increase sales without changing expenses", await page.getByText("Rs 39,500", { exact: true }).count() === 1);
   await go(page, `/factory/invoices/${created.id}/edit`);
   await page.getByLabel("Unit amount (Rs)", { exact: true }).fill("4000");
   await page.getByRole("button", { name: "Save invoice", exact: true }).click();

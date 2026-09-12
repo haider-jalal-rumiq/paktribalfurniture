@@ -22,7 +22,7 @@ export function cmsFixture() {
     order_payments: [], balance_entries: [{ id: id(), received_on: "2026-09-09", amount: 100000, note: "Test opening balance", created_at: stamp }],
     labour_entries: [{ id: id(), name: "QA Worker", period: "2026-09-01", paid_on: "2026-09-09", pay_basis: "monthly", salary: 40000, per_day_salary: 1000, days_worked: 0, item_count: 0, item_rate: 0, ot_hours: 0, ot_rate: 0, leave_deduction: 2000, deduction: 0, deduction_notes: null, total_amount: 38000, advance: 10000, salary_paid: 5000, leaves: 2, notes: "Agreed adjustment", created_at: stamp, updated_at: stamp }],
     invoices: [invoice, { ...invoice, id: id(), invoice_no: 2, issued_on: "2026-09-26", items: [{ ...invoice.items[0], quantity: 1, amount: 22000 }], total_amount: 22000 }, { ...invoice, id: id(), invoice_no: 3, client_id: school.id, client_name: school.name, issued_on: "2026-09-27", items: [{ ...invoice.items[0], quantity: 1, amount: 500 }], total_amount: 500 }],
-    shop_sales: [], shop_invoices: [], shop_expenses: [], products: [],
+    shop_sales: [], shop_invoices: [], shop_expenses: [], products: [], inventory_items: [],
   };
   const user = { id: id(), aud: "authenticated", role: "authenticated", email: "qa@example.test", app_metadata: { role: "admin", provider: "email" }, user_metadata: {}, created_at: stamp, identities: [] };
   const token = [Buffer.from(JSON.stringify({ alg: "HS256", typ: "JWT" })).toString("base64url"), Buffer.from(JSON.stringify({ sub: user.id, exp: Math.floor(Date.now()/1000) + 86400, iat: Math.floor(Date.now()/1000), aud: "authenticated", role: "authenticated", app_metadata: { role: "admin" } })).toString("base64url"), "local-test-signature"].join(".");
