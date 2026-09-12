@@ -2,6 +2,7 @@ import { ExpenseTabs } from "@/components/cms/expense-tabs";
 import { CmsPage, SectionHeading } from "@/components/cms/cms-page";
 import { RecordList } from "@/components/cms/record-list";
 import { StatCard } from "@/components/cms/stat-card";
+import { WoodAccountList } from "@/components/cms/wood-account-list";
 import { Button, ButtonLink } from "@/components/ui/button";
 import { Field, Input } from "@/components/ui/field";
 import { woodTotals } from "@/lib/accounting-core";
@@ -21,17 +22,7 @@ export default async function WoodPage({ searchParams }: { searchParams: Promise
   const overall = woodTotals(allEntries);
   const pickable = [...new Set([month, ...months])].sort().reverse();
 
-  const purchasers = new Map<string, { id: string; name: string; purchased: bigint; paid: bigint }>();
-  for (const entry of allEntries) {
-    const id = entry.purchaser_name.trim().toLocaleLowerCase("en");
-    const row = purchasers.get(id) ?? { id, name: entry.purchaser_name, purchased: 0n, paid: 0n };
-    row.purchased += BigInt(entry.purchased_amount);
-    row.paid += BigInt(entry.paid_amount);
-    purchasers.set(id, row);
-  }
-  const purchaserRows = [...purchasers.values()].sort((a, b) => a.name.localeCompare(b.name));
-
-  return <CmsPage title="Wood sheet" eyebrow="Expenses" actions={<ButtonLink href={`/factory/expenses/wood/new?month=${month}`} size="sm">Add wood entry</ButtonLink>}>
+  return <CmsPage title="Wood sheet" eyebrow="Expenses" actions={<ButtonLink href={`/factory/expenses/wood/new?month=${month}&mode=purchase`} size="sm">Add wood purchase</ButtonLink>}>
     <ExpenseTabs active="wood" />
 
     <nav aria-label="Wood purchase month" className="mb-4 flex flex-wrap gap-2">
@@ -50,34 +41,26 @@ export default async function WoodPage({ searchParams }: { searchParams: Promise
       <StatCard label="Total remaining" value={formatPkr(overall.remaining)} tone="accent" />
     </div>
 
-    <p className="mb-4 text-sm text-muted">{monthLabel(month)} · {entries.length} {entries.length === 1 ? "entry" : "entries"}. Open an entry to edit its purchase or payment.</p>
-    <RecordList
-      empty="No wood purchases or payments for this month."
-      rows={entries.map((entry) => {
-        const totals = woodTotals([entry]);
-        return {
-          id: entry.id,
-          href: `/factory/expenses/wood/${entry.id}`,
-          title: entry.purchaser_name,
-          subtitle: `Purchased ${formatPkr(totals.purchased)} · Paid ${formatPkr(totals.paid)}${entry.notes ? ` · ${entry.notes}` : ""}`,
-          meta: <span className={cn("font-semibold tabular-nums", totals.remaining > 0n ? "text-accent" : "text-ink")}>{formatPkr(totals.remaining)}</span>,
-          metaSub: totals.remaining > 0n ? "entry balance" : totals.remaining < 0n ? "payment against old balance" : "settled",
-        };
-      })}
-    />
+    <section className="mt-9">
+      <SectionHeading>Purchaser accounts · all time</SectionHeading>
+      <p className="mb-4 text-sm text-muted">Open a purchaser to see every purchase and payment, or to record the next transaction.</p>
+      <WoodAccountList entries={allEntries} month={month} />
+    </section>
 
     <section className="mt-9">
-      <SectionHeading>Purchaser balances · all time</SectionHeading>
+      <SectionHeading>{monthLabel(month)} transactions</SectionHeading>
+      <p className="mb-4 text-sm text-muted">{entries.length} {entries.length === 1 ? "entry" : "entries"}. Open an entry to edit or remove it.</p>
       <RecordList
-        empty="No purchaser balances yet."
-        rows={purchaserRows.map((row) => {
-          const remaining = row.purchased - row.paid;
+        empty="No wood purchases or payments for this month."
+        rows={entries.map((entry) => {
+          const totals = woodTotals([entry]);
           return {
-            id: row.id,
-            title: row.name,
-            subtitle: `Purchased ${formatPkr(row.purchased)} · Paid ${formatPkr(row.paid)}`,
-            meta: <span className={cn("font-semibold tabular-nums", remaining > 0n ? "text-accent" : "text-ink")}>{formatPkr(remaining)}</span>,
-            metaSub: remaining > 0n ? "still owing" : remaining < 0n ? "supplier credit" : "settled",
+            id: entry.id,
+            href: `/factory/expenses/wood/${entry.id}`,
+            title: entry.purchaser_name,
+            subtitle: `Purchased ${formatPkr(totals.purchased)} · Paid ${formatPkr(totals.paid)}${entry.notes ? ` · ${entry.notes}` : ""}`,
+            meta: <span className={cn("font-semibold tabular-nums", totals.remaining !== 0n ? "text-accent" : "text-ink")}>{totals.remaining < 0n ? `− ${formatPkr(-totals.remaining)}` : formatPkr(totals.remaining)}</span>,
+            metaSub: totals.remaining > 0n ? "balance added" : totals.remaining < 0n ? "balance paid" : "settled",
           };
         })}
       />

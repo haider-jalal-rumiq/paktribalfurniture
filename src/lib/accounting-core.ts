@@ -18,6 +18,21 @@ export function woodTotals(rows: readonly { purchased_amount: number; paid_amoun
   return { purchased, paid, remaining: purchased - paid };
 }
 
+/** Group every purchase and payment into its purchaser's running account. */
+export function woodAccounts<T extends { id: string; purchaser_name: string; purchased_amount: number; paid_amount: number }>(rows: readonly T[]) {
+  const accounts = new Map<string, { id: string; name: string; purchased: bigint; paid: bigint; remaining: bigint; entries: T[] }>();
+  for (const entry of rows) {
+    const id = entry.purchaser_name.trim().toLocaleLowerCase("en");
+    const account = accounts.get(id) ?? { id, name: entry.purchaser_name.trim(), purchased: 0n, paid: 0n, remaining: 0n, entries: [] };
+    account.purchased += BigInt(entry.purchased_amount);
+    account.paid += BigInt(entry.paid_amount);
+    account.remaining = account.purchased - account.paid;
+    account.entries.push(entry);
+    accounts.set(id, account);
+  }
+  return [...accounts.values()];
+}
+
 export const showDate = (value: string): string =>
   new Intl.DateTimeFormat("en-PK", { dateStyle: "medium", timeZone: "UTC" }).format(new Date(`${value}T00:00:00Z`));
 
