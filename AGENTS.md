@@ -122,7 +122,7 @@ src/
     motion/      the shared animation primitives
   features/
     auth/        admin login + sign out, shared by /studio, /factory and /shop
-    cms/         schemas + forms for client, order, invoice, balance, labour, expense
+    cms/         schemas + forms for client, order, invoice, balance, labour, wood, expense
     shop/        schemas + forms for a counter sale and a shop invoice
     inquiry/     public enquiry form (WhatsApp handoff, not booking)
     studio/      product editor
@@ -144,11 +144,11 @@ src/
 - Filter and pagination state belongs in `searchParams`.
 - **Money is `bigint` whole rupees.** Never float, never `numeric`. Parse user
   input with `parseAmount()` — it rejects rather than coerces.
-- **Balances are derived, never stored.** Credit is added balances minus expenses
-  and paid labour. Invoices alone determine sales and do not increase Credit.
+- **Balances are derived, never stored.** Credit is added balances minus expenses,
+  paid labour and wood payments. Invoices alone determine sales and do not increase Credit.
   Legacy `order_payments` stay in backups; active orders have no payments.
 - **The two books are separate.** Shop net profit deducts `shop_expenses`
-  only. The factory's `expenses` and `labour_entries` never touch it.
+  only. The factory's `expenses`, `labour_entries` and `wood_entries` never touch it.
 - **A shop sale row stores `sale_price` per unit, and that is the truth.**
   Saving a shop invoice drafts one row per line with the price from the
   invoice; `cost` stays null until the purchase price is entered, and a draft
@@ -167,6 +167,9 @@ src/
   and balance. `lib/labour-write.ts` is the only writer of
   `labour_entries.total_amount`, and it uses that same function. Totals may go
   negative when deductions exceed earnings — that is shown, not clamped.
+- **A wood supplier balance is computed, never stored.** Purchases increase the
+  payable and actual payments reduce it. Only `wood_entries.paid_amount` reduces
+  factory Credit and appears in expenses, using `paid_on` for the expense month.
 - **Inventory belongs to the factory.** A factory invoice line carrying a
   `code` deducts that inventory item on **create only** — editing an invoice
   never re-adjusts stock, because a second pass would double-deduct the lines

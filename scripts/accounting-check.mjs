@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import {
-  sumRupees, invoiceTotal, labourTotals, availableCredit, shopSaleAmounts,
+  sumRupees, invoiceTotal, labourTotals, woodTotals, availableCredit, shopSaleAmounts,
   manualSalePrice, achievedMarginPct, shopTotals, invoiceDiscount, partnerSplit,
 } from "../src/lib/accounting-core.ts";
 let count = 0;
@@ -12,6 +12,9 @@ check(invoiceTotal([{ amount: 12500, quantity: 2 }, { amount: 4000, quantity: 3 
 check(invoiceTotal([]), 0n, "Empty calculation");
 check(availableCredit(100000n, 7000n, 15000n), 78000n, "General and labour expenses both reduce Credit");
 check(availableCredit(0n, 7000n, 0n), -7000n, "Negative Credit is visible");
+check(availableCredit(100000n, 7000n, 15000n, 30000n), 48000n, "Wood payments also reduce Credit");
+check(woodTotals([{ purchased_amount: 20000, paid_amount: 10000 }, { purchased_amount: 30000, paid_amount: 20000 }]), { purchased: 50000n, paid: 30000n, remaining: 20000n }, "Wood purchaser balance carries across months");
+check(woodTotals([]), { purchased: 0n, paid: 0n, remaining: 0n }, "Empty wood ledger");
 
 // Manual pricing: margin onto the purchase price, then a percentage discount.
 check(manualSalePrice(10000, 40, 0), { marked: 14000n, discount: 0n, salePrice: 14000n }, "Margin with no discount");

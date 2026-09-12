@@ -7,8 +7,15 @@ export function invoiceTotal(items: readonly { amount: number; quantity: number 
   return items.reduce((sum, item) => sum + BigInt(item.amount) * BigInt(item.quantity), 0n);
 }
 
-export function availableCredit(added: bigint, expenses: bigint, labourPaid: bigint): bigint {
-  return added - expenses - labourPaid;
+export function availableCredit(added: bigint, expenses: bigint, labourPaid: bigint, woodPaid = 0n): bigint {
+  return added - expenses - labourPaid - woodPaid;
+}
+
+/** Purchases create the payable; only payments spend cash. */
+export function woodTotals(rows: readonly { purchased_amount: number; paid_amount: number }[]) {
+  const purchased = rows.reduce((sum, row) => sum + BigInt(row.purchased_amount), 0n);
+  const paid = rows.reduce((sum, row) => sum + BigInt(row.paid_amount), 0n);
+  return { purchased, paid, remaining: purchased - paid };
 }
 
 export const showDate = (value: string): string =>

@@ -35,7 +35,7 @@ export default function SettingsPage() {
       <section className="mt-12">
         <h2 className="font-display text-3xl text-ink">Backup</h2>
         <p className="mt-2 max-w-2xl text-sm leading-6 text-ink-soft">
-          Download clients, orders, invoices, balances, labour, expenses and legacy payments as one JSON file. A copy is also written
+          Download clients, orders, invoices, balances, labour, wood purchases, expenses and legacy payments as one JSON file. A copy is also written
           to private storage each week. Neither survives losing the Supabase project itself — for
           that, turn on point-in-time recovery in the Supabase dashboard.
         </p>

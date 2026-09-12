@@ -28,7 +28,7 @@ The public catalogue works without Supabase, but products stay empty and enquiry
 
 1. Create a dedicated Supabase project for Pak Tribal Furniture. Do not reuse an unrelated production project.
 2. Open the SQL editor and run `supabase/schema.sql` once. It creates the tables, indexes, row-level security policies, explicit Data API grants, and the `product-images` Storage bucket.
-   Then run `supabase/cms-schema.sql` for the business CMS: clients, orders, payments, expenses, push subscriptions, and the private `order-images` and `backups` buckets.
+   Then run `supabase/cms-schema.sql` for the business CMS: clients, orders, payments, general expenses, labour, wood purchases, push subscriptions, and the private `order-images` and `backups` buckets.
    Then run `supabase/inventory-schema.sql` for the factory inventory: stock items and the private `inventory-images` bucket.
    Then run `supabase/shop-schema.sql` for the shop ledger: counter sales, shop invoices and shop expenses. It reuses helpers created by the two files above, so run it last. Both CMS files are additive and safe to re-run on an existing database.
 3. Copy the project URL and publishable key into `.env.local` as `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`.
@@ -75,7 +75,7 @@ For an existing installation, apply `supabase/cms-operations.sql` once. Fresh
 installations use `cms-schema.sql`, which includes the same upgrade. Existing
 order amounts, payment records and old expense links are preserved for exports.
 
-- **Dashboard:** Credit = added balances minus general expenses and paid labour.
+- **Dashboard:** Credit = added balances minus general expenses, paid labour and wood payments.
   Add an opening balance or received funds through **Add balance**. Total sales
   is the sum of issued invoices. Creating an invoice does not add cash to Credit.
 - **Orders:** expand client → order → items. Each item has a quantity and status;
@@ -91,6 +91,11 @@ order amounts, payment records and old expense links are preserved for exports.
   when payments need to be allocated to separate dates. Do not also enter the same
   labour payment in general expenses. Historical general labour expenses remain
   in the general expense total and are not copied into the new labour sheet.
+- **Wood sheet:** record each supplier purchase and the payment actually made.
+  Purchases build the supplier balance across months; payments reduce that balance
+  and are included in factory expenses by payment date. The sheet shows monthly,
+  all-time, and per-supplier totals. Do not enter the same payment again as a
+  general expense.
 - **Invoices:** item, quantity, unit amount, free-text stock/order source and
   calculated total. Client details are snapshotted. Edit issued invoices or void
   them while retaining the record. Voided invoices are excluded from Total sales.
@@ -102,7 +107,7 @@ order amounts, payment records and old expense links are preserved for exports.
 
 Money columns are `bigint` whole rupees. Invoice totals are generated from items
 by PostgreSQL; all-time sums use SQL and are transported as text for exact bigint
-calculations. Available Credit and labour balances are derived, never stored.
+calculations. Available Credit, labour balances and wood supplier balances are derived, never stored.
 
 ### Notifications and scheduled jobs
 
@@ -136,8 +141,8 @@ Three layers, and only the first survives losing the Supabase project itself:
 1. **Supabase point-in-time recovery** — a paid feature, off by default. Turn it
    on once real orders are in. This is a billing decision, not code.
 2. **Download a copy of everything** in `/factory/settings` — one JSON file of every
-   client, order (including items), invoice, balance, labour entry, expense and
-   legacy payment. The version 2 export paginates all tables without a row cap.
+   client, order (including items), invoice, balance, labour entry, wood entry,
+   expense and legacy payment. The version 4 export paginates all tables without a row cap.
 3. **Weekly automated export** to the private `backups` bucket, last 12 kept.
 
 ## Checks

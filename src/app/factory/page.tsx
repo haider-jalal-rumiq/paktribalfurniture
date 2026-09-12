@@ -41,7 +41,7 @@ export default async function DashboardPage() {
     {configured && !totals && <p role="alert" className="mb-6 rounded-[var(--radius-card)] border border-accent/30 p-4 text-sm text-accent-deep">Financial totals could not be loaded. Please refresh before recording money.</p>}
     <p className="mb-4 text-xs font-semibold uppercase tracking-[0.14em] text-muted">All-time totals</p>
     <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-      <StatCard label="Expenses" value={totals ? formatPkr(totals.expenses) : "—"} hint="General expenses + paid labour" />
+      <StatCard label="Expenses" value={totals ? formatPkr(totals.expenses) : "—"} hint="General expenses + paid labour + wood payments" />
       <StatCard label="Total sales" value={totals ? formatPkr(totals.sales) : "—"} icon={<ReceiptText className="h-4 w-4" />} hint="Issued invoices; excludes voided invoices" />
       {/* 2. Both order tiles open the full list rather than being dead ends. */}
       <Link href="/factory/orders" className="rounded-[var(--radius-card)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent">
@@ -51,7 +51,7 @@ export default async function DashboardPage() {
         <StatCard label="Order items" value={orderItems} icon={<Boxes className="h-4 w-4" />} hint="Pieces across every order · see them all" className="h-full transition-colors hover:border-accent" />
       </Link>
     </div>
-    <div className="mt-4 flex flex-wrap gap-x-6 gap-y-2 text-sm"><Link href="/factory/balances" className="min-h-11 py-3 font-semibold text-accent">Balance history{totals ? ` · ${formatPkr(totals.added)} added` : ""}</Link><Link href="/factory/expenses" className="min-h-11 py-3 font-semibold text-accent">Record an expense</Link><Link href="/factory/expenses/labour" className="min-h-11 py-3 font-semibold text-accent">Labour sheet</Link></div>
+    <div className="mt-4 flex flex-wrap gap-x-6 gap-y-2 text-sm"><Link href="/factory/balances" className="min-h-11 py-3 font-semibold text-accent">Balance history{totals ? ` · ${formatPkr(totals.added)} added` : ""}</Link><Link href="/factory/expenses" className="min-h-11 py-3 font-semibold text-accent">Record an expense</Link><Link href="/factory/expenses/labour" className="min-h-11 py-3 font-semibold text-accent">Labour sheet</Link><Link href="/factory/expenses/wood" className="min-h-11 py-3 font-semibold text-accent">Wood sheet</Link></div>
     {urgent.length > 0 && <section className="mt-9">
       <SectionHeading action={<Link href="/factory/orders" className="text-sm font-semibold text-accent">All orders</Link>}>Urgent · {urgent.length}</SectionHeading>
       <RecordList empty="Nothing urgent." rows={urgent.map((order) => {
