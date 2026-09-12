@@ -13,6 +13,7 @@ import {
   summariseExpenses,
   today,
 } from "../src/lib/cms-core.ts";
+import { itemMatchesStatus, orderMatchesFilters } from "../src/lib/orders.ts";
 
 // parseAmount — what a person actually types
 assert.equal(parseAmount("250000"), 250000);
@@ -89,6 +90,18 @@ assert.deepEqual(
   { total: 10000, byCategory: { material: 7000, labor: 3000 } },
 );
 assert.deepEqual(summariseExpenses([]), { total: 0, byCategory: {} });
+
+// Order filters: client and urgency belong to the order; a normal status in
+// item view belongs to the item instead of hiding/showing the whole order.
+const filterOrder = { client_id: "client-a", urgent: false, expected_date: null, status: "pending" };
+assert.equal(orderMatchesFilters(filterOrder, { clientId: "client-a", byItems: true }), true);
+assert.equal(orderMatchesFilters(filterOrder, { clientId: "client-b", byItems: true }), false);
+assert.equal(orderMatchesFilters(filterOrder, { status: "completed", byItems: true }), true, "item view keeps the order for item-level filtering");
+assert.equal(orderMatchesFilters({ ...filterOrder, urgent: true }, { status: "urgent", byItems: true }), true);
+assert.equal(orderMatchesFilters(filterOrder, { status: "completed", byItems: false }), false, "grouped view filters order status");
+assert.equal(itemMatchesStatus({ status: "pending" }, "pending"), true);
+assert.equal(itemMatchesStatus({ status: "completed" }, "pending"), false);
+assert.equal(itemMatchesStatus({ status: "completed" }, "urgent"), true, "urgent is already applied at order level");
 
 // submitRequest must NEVER throw and never leave a caller without a message.
 // This is the bug that left "Saving" spinning forever: a bare `await fetch`

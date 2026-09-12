@@ -7,26 +7,27 @@ import { Button, ButtonLink } from "@/components/ui/button";
 import { Field, Select } from "@/components/ui/field";
 import { orderStatuses, orderStatusLabel } from "@/content/cms";
 import { getClients, getOrders } from "@/lib/cms";
-import { isUrgentOrder } from "@/lib/orders";
+import { isUrgentOrder, itemMatchesStatus, orderMatchesFilters } from "@/lib/orders";
 import { cn } from "@/lib/utils";
 
 export const metadata = { title: "Orders" };
 
 export default async function OrdersPage({ searchParams }: { searchParams: Promise<{ status?: string; client?: string; view?: string; item?: string }> }) {
   const params = await searchParams;
-  const status = orderStatuses.some((row) => row.value === params.status) ? params.status : undefined;
+  const byItems = params.view === "items";
+  const status = params.status === "urgent" || orderStatuses.some((row) => row.value === params.status) ? params.status : undefined;
   const clients = await getClients();
   const clientId = clients.some((row) => row.id === params.client) ? params.client : undefined;
-  const orders = await getOrders({ status, clientId });
+  const orders = (await getOrders()).filter((order) => orderMatchesFilters(order, { status, clientId, byItems }));
   const shown = clients.filter((client) => (!clientId || client.id === clientId) && (!status || orders.some((row) => row.client_id === client.id)));
 
   // Two ways to read the same orders: grouped by client, or every item flat.
-  const byItems = params.view === "items";
   const itemQuery = params.item?.trim().toLowerCase() ?? "";
   const allItems = orders
     .flatMap((order) => order.items.map((item) => ({ order, item })))
-    .filter(({ item }) => !itemQuery || item.name.toLowerCase().includes(itemQuery));
+    .filter(({ item }) => itemMatchesStatus(item, status) && (!itemQuery || item.name.toLowerCase().includes(itemQuery)));
   const pieces = allItems.reduce((count, { item }) => count + item.quantity, 0);
+  const itemOrders = new Set(allItems.map(({ order }) => order.id)).size;
 
   const keep = (extra: Record<string, string>) => {
     const query = new URLSearchParams();
@@ -42,7 +43,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
 
   return <CmsPage title="Orders" eyebrow="Clients / orders / items" actions={<ButtonLink href="/factory/orders/new" size="sm"><Plus className="h-4 w-4" aria-hidden="true" />New order</ButtonLink>}>
     <nav aria-label="View" className="mb-5 flex gap-2 border-b border-hairline">
-      {([{ key: "", label: "By client" }, { key: "items", label: "All items" }] as const).map((tab) => (
+      {([{ key: "", label: "By client" }, { key: "items", label: "By item" }] as const).map((tab) => (
         <Link
           key={tab.key}
           href={keep({ view: tab.key })}
@@ -65,9 +66,10 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
           {clients.map((client) => <option key={client.id} value={client.id}>{client.name}</option>)}
         </Select>
       </Field>
-      <Field label="Order status" htmlFor="filterStatus" className="min-w-0 flex-1">
+      <Field label={byItems ? "Item status / urgency" : "Order status / urgency"} htmlFor="filterStatus" className="min-w-0 flex-1">
         <Select id="filterStatus" name="status" defaultValue={status ?? ""}>
           <option value="">All statuses</option>
+          <option value="urgent">Urgent</option>
           {orderStatuses.map((row) => <option key={row.value} value={row.value}>{row.label}</option>)}
         </Select>
       </Field>
@@ -75,7 +77,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
     </form>
 
     {byItems ? <>
-      <p className="mb-4 text-sm text-muted">{allItems.length} item lines · {pieces} pieces across {orders.length} orders.</p>
+      <p className="mb-4 text-sm text-muted">{allItems.length} item lines · {pieces} pieces across {itemOrders} orders.</p>
       {allItems.length ? (
         <div className="overflow-x-auto rounded-[var(--radius-card)] border border-hairline bg-surface shadow-[var(--shadow-card)]">
           <table className="document-table">
@@ -92,15 +94,17 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
                 <tr key={`${order.id}-${item.id}`}>
                   <td data-label="Item">
                     <span className="font-semibold">{item.name}</span>
-                    {item.notes && <p className="mt-1 whitespace-pre-wrap break-words text-xs text-muted">{item.notes}</p>}
+                    {item.notes && <p className="mt-1 whitespace-pre-wrap break-words text-xs leading-relaxed text-muted"><span className="font-semibold text-ink-soft">Measurements / details:</span> {item.notes}</p>}
                   </td>
                   <td data-label="Qty" className="number">{item.quantity}</td>
                   <td data-label="Item status"><Badge tone={STATUS_TONE[item.status]}>{orderStatusLabel(item.status)}</Badge></td>
                   <td data-label="Order">
                     <Link href={`/factory/orders/${order.id}`} className="font-semibold text-accent">#{order.order_no}</Link>
+                    <p className="mt-1 max-w-64 break-words text-xs font-medium text-ink-soft">{order.title}</p>
+                    {order.description && <p className="mt-1 max-w-64 whitespace-pre-wrap break-words text-xs leading-relaxed text-muted">{order.description}</p>}
                     {isUrgentOrder(order) && <p className="mt-1"><Badge tone="accent">Urgent</Badge></p>}
                   </td>
-                  <td data-label="Client">{order.clients?.name ?? "—"}</td>
+                  <td data-label="Client" className="font-semibold text-ink-soft">{order.clients?.name ?? "—"}</td>
                 </tr>
               ))}
             </tbody>
