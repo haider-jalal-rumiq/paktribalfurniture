@@ -3,9 +3,9 @@ import Link from "next/link";
 import { CmsPage, EmptyState } from "@/components/cms/cms-page";
 import { OrderTree } from "@/components/cms/order-tree";
 import { Badge, STATUS_TONE } from "@/components/ui/badge";
-import { Button, ButtonLink } from "@/components/ui/button";
-import { Field, Select } from "@/components/ui/field";
+import { ButtonLink } from "@/components/ui/button";
 import { orderStatuses, orderStatusLabel } from "@/content/cms";
+import { OrderFilters } from "@/features/cms/order-filters";
 import { getClients, getOrders } from "@/lib/cms";
 import { itemMatchesStatus, orderMatchesFilters } from "@/lib/order-filters";
 import { isUrgentOrder } from "@/lib/orders";
@@ -19,7 +19,11 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
   const status = params.status === "urgent" || orderStatuses.some((row) => row.value === params.status) ? params.status : undefined;
   const clients = await getClients();
   const clientId = clients.some((row) => row.id === params.client) ? params.client : undefined;
-  const orders = (await getOrders()).filter((order) => orderMatchesFilters(order, { status, clientId, byItems }, isUrgentOrder(order)));
+  const orders = (await getOrders({
+    clientId,
+    // In item view, normal statuses belong to items. Urgency remains derived.
+    status: !byItems && status !== "urgent" ? status : undefined,
+  })).filter((order) => orderMatchesFilters(order, { status, clientId, byItems }, isUrgentOrder(order)));
   const shown = clients.filter((client) => (!clientId || client.id === clientId) && (!status || orders.some((row) => row.client_id === client.id)));
 
   // Two ways to read the same orders: grouped by client, or every item flat.
@@ -59,23 +63,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
       ))}
     </nav>
 
-    <form className="mb-6 grid items-end gap-3 sm:grid-cols-[1fr_1fr_auto]" action="/factory/orders">
-      {byItems && <input type="hidden" name="view" value="items" />}
-      <Field label="Client" htmlFor="filterClient" className="min-w-0 flex-1">
-        <Select id="filterClient" name="client" defaultValue={clientId ?? ""}>
-          <option value="">All clients</option>
-          {clients.map((client) => <option key={client.id} value={client.id}>{client.name}</option>)}
-        </Select>
-      </Field>
-      <Field label={byItems ? "Item status / urgency" : "Order status / urgency"} htmlFor="filterStatus" className="min-w-0 flex-1">
-        <Select id="filterStatus" name="status" defaultValue={status ?? ""}>
-          <option value="">All statuses</option>
-          <option value="urgent">Urgent</option>
-          {orderStatuses.map((row) => <option key={row.value} value={row.value}>{row.label}</option>)}
-        </Select>
-      </Field>
-      <Button type="submit" variant="outline">Filter</Button>
-    </form>
+    <OrderFilters byItems={byItems} clientId={clientId} clients={clients} itemQuery={params.item?.trim()} status={status} />
 
     {byItems ? <>
       <p className="mb-4 text-sm text-muted">{allItems.length} item lines · {pieces} pieces across {itemOrders} orders.</p>
