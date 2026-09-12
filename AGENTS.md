@@ -168,7 +168,8 @@ src/
   `labour_entries.total_amount`, and it uses that same function. Totals may go
   negative when deductions exceed earnings — that is shown, not clamped.
 - **A wood supplier balance is computed, never stored.** Purchases increase the
-  payable and actual payments reduce it. Only `wood_entries.paid_amount` reduces
+  payable and separate actual-payment rows reduce it; never overwrite an earlier
+  purchase to record a later payment. Only `wood_entries.paid_amount` reduces
   factory Credit and appears in expenses, using `paid_on` for the expense month.
 - **Inventory belongs to the factory.** A factory invoice line carrying a
   `code` deducts that inventory item on **create only** — editing an invoice

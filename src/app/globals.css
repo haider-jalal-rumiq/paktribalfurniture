@@ -148,7 +148,8 @@
 /* Native disclosures keep the three-level order tree usable without JavaScript. */
 summary::-webkit-details-marker { display: none; }
 .order-client[open] > summary > .tree-chevron,
-.order-branch[open] > summary > .tree-chevron { transform: rotate(90deg); }
+.order-branch[open] > summary > .tree-chevron,
+.wood-account[open] > summary > .tree-chevron { transform: rotate(90deg); }
 
 .ptf-document {
   margin: 0 auto 2rem;

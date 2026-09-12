@@ -124,27 +124,37 @@ try {
   await page.getByText("Custom transport", { exact: true }).waitFor();
   check("Custom categories are saved", fixture.db.expenses.some(row => row.category === "Custom transport"));
   check("Expenses navigation includes the Wood sheet", await page.getByRole("link", { name: "Wood sheet", exact: true }).isVisible());
-  await go(page, "/factory/expenses/wood/new?month=2026-09");
+  await go(page, "/factory/expenses/wood/new?month=2026-09&mode=purchase");
   await page.getByLabel("Wood purchaser name", { exact: true }).fill("Company B");
-  await page.getByLabel("Wood purchased (Rs)", { exact: true }).fill("20000");
-  await page.getByLabel("Payment made (Rs)", { exact: true }).fill("10000");
+  await page.getByLabel("Wood purchased (Rs)", { exact: true }).fill("200000");
+  await page.getByLabel("Payment made now (Rs)", { exact: true }).fill("50000");
   await page.getByLabel("Payment date", { exact: true }).fill("2026-09-10");
-  await page.getByRole("button", { name: "Save wood entry", exact: true }).click();
+  await page.getByRole("button", { name: "Save purchase", exact: true }).click();
   await page.waitForURL(/\/factory\/expenses\/wood\?month=2026-09/);
-  check("September wood purchase and payment are saved", fixture.db.wood_entries.length === 1 && fixture.db.wood_entries[0].purchased_amount === 20000 && fixture.db.wood_entries[0].paid_amount === 10000);
-  check("Wood sheet shows September remaining", await page.getByText("Purchased this month").locator("..").locator("..").getByText("Rs 20,000", { exact: true }).isVisible() && await page.getByText("Total remaining").locator("..").locator("..").getByText("Rs 10,000", { exact: true }).isVisible());
-  await page.getByRole("link", { name: "Add wood entry", exact: true }).click();
-  await page.getByLabel("Wood purchaser name", { exact: true }).fill("Company B");
-  await page.getByLabel("Purchase month", { exact: true }).fill("2026-10");
-  await page.getByLabel("Wood purchased (Rs)", { exact: true }).fill("30000");
-  await page.getByLabel("Payment made (Rs)", { exact: true }).fill("20000");
+  check("First wood purchase and payment are saved", fixture.db.wood_entries.length === 1 && fixture.db.wood_entries[0].purchased_amount === 200000 && fixture.db.wood_entries[0].paid_amount === 50000);
+  check("First purchase leaves Rs 150,000", await page.getByText("Purchased this month").locator("..").locator("..").getByText("Rs 200,000", { exact: true }).isVisible() && await page.getByText("Total remaining").locator("..").locator("..").getByText("Rs 150,000", { exact: true }).isVisible());
+  await page.getByRole("link", { name: "Record payment", exact: true }).click();
+  check("Payment action keeps the purchaser selected", await page.getByLabel("Wood purchaser name", { exact: true }).inputValue() === "Company B" && await page.getByLabel("Payment only", { exact: true }).isChecked());
+  await page.getByLabel("Payment amount (Rs)", { exact: true }).fill("100000");
   await page.getByLabel("Payment date", { exact: true }).fill("2026-10-10");
-  await page.getByRole("button", { name: "Save wood entry", exact: true }).click();
+  await page.getByRole("button", { name: "Save payment", exact: true }).click();
   await page.waitForURL(/\/factory\/expenses\/wood\?month=2026-10/);
-  check("Purchaser balance carries across months", await page.getByText("Total wood purchased").locator("..").locator("..").getByText("Rs 50,000", { exact: true }).isVisible() && await page.getByText("Total remaining").locator("..").locator("..").getByText("Rs 20,000", { exact: true }).isVisible());
+  check("Second payment reduces the original balance", fixture.db.wood_entries.length === 2 && fixture.db.wood_entries[1].purchased_amount === 0 && fixture.db.wood_entries[1].paid_amount === 100000 && await page.getByText("Total remaining").locator("..").locator("..").getByText("Rs 50,000", { exact: true }).isVisible());
+  await page.getByRole("link", { name: "Add purchase", exact: true }).click();
+  check("Purchase action keeps the purchaser selected", await page.getByLabel("Wood purchaser name", { exact: true }).inputValue() === "Company B" && await page.getByLabel("Wood purchase", { exact: true }).isChecked());
+  await page.getByLabel("Purchase month", { exact: true }).fill("2026-11");
+  await page.getByLabel("Wood purchased (Rs)", { exact: true }).fill("400000");
+  await page.getByLabel("Payment made now (Rs)", { exact: true }).fill("0");
+  await page.getByRole("button", { name: "Save purchase", exact: true }).click();
+  await page.waitForURL(/\/factory\/expenses\/wood\?month=2026-11/);
+  check("Purchaser hierarchy carries purchases and payments across months", await page.getByText("Total wood purchased").locator("..").locator("..").getByText("Rs 600,000", { exact: true }).isVisible() && await page.getByText("Total remaining").locator("..").locator("..").getByText("Rs 450,000", { exact: true }).isVisible() && await page.getByText(/Purchased Rs 600,000 · Paid Rs 150,000 · 4 transactions/).isVisible());
+  check("Purchases and payments appear as separate hierarchy events", await page.getByText("Purchase", { exact: true }).count() === 2 && await page.getByText("Payment", { exact: true }).count() === 2);
+  check("Hierarchy shows the Rs 50,000 running balance before the next purchase", await page.getByText("Balance Rs 50,000", { exact: true }).isVisible());
   await page.screenshot({ path: `${OUT}/wood-sheet-desktop.png`, fullPage: true });
   await go(page, "/factory/expenses?month=2026-09");
-  check("Wood payments are included in general expense totals", await page.getByText("Wood payments").locator("..").locator("..").getByText("Rs 10,000", { exact: true }).isVisible() && await page.getByText("Total expenses").locator("..").locator("..").getByText("Rs 33,000", { exact: true }).isVisible());
+  check("September wood payment is included in general expense totals", await page.getByText("Wood payments").locator("..").locator("..").getByText("Rs 50,000", { exact: true }).isVisible() && await page.getByText("Total expenses").locator("..").locator("..").getByText("Rs 73,000", { exact: true }).isVisible());
+  await go(page, "/factory/expenses?month=2026-10");
+  check("Later payment is included in its own expense month", await page.getByText("Wood payments").locator("..").locator("..").getByText("Rs 100,000", { exact: true }).isVisible() && await page.getByText("Total expenses").locator("..").locator("..").getByText("Rs 100,000", { exact: true }).isVisible());
   await go(page, "/factory/expenses/labour/new?month=2026-09");
   check("Add form links back to the labour entries list", await page.getByRole("link", { name: "View labour entries", exact: true }).getAttribute("href") === "/factory/expenses/labour?month=2026-09");
   await page.getByLabel("Worker name").fill("QA Second Worker");
@@ -196,7 +206,7 @@ try {
   const replay = await context.request.post(`${BASE}/api/cms/invoices`, { data: { id: created.id, clientId: created.client_id, issuedOn: created.issued_on, notes: "", items: created.items } });
   check("Invoice retries do not create duplicate sales", replay.ok() && fixture.db.invoices.length === 4);
   await go(page, "/factory");
-  await page.getByText("Rs 56,000", { exact: true }).waitFor();
+  await page.getByText("Rs 176,000", { exact: true }).waitFor();
   check("Invoices increase sales without changing expenses", await page.getByText("Rs 39,500", { exact: true }).count() === 1);
   await go(page, `/factory/invoices/${created.id}/edit`);
   await page.getByLabel("Unit amount (Rs)", { exact: true }).fill("4000");
@@ -217,7 +227,7 @@ try {
   const badLabour = await context.request.post(`${BASE}/api/cms/labour`, { data: { id: crypto.randomUUID(), name: "QA invalid", period: "2026-09", paidOn: "2026-09-09", salary: 100, totalAmount: 100, advance: 90, salaryPaid: 90, leaves: 0 } });
   check("Overpaid labour rejected", badLabour.status() === 400);
   const backup = await (await context.request.get(`${BASE}/api/cms/export`)).json();
-  check("Backup includes invoices, balances, labour, wood and embedded order items", backup.version === 4 && backup.invoices.length === 4 && backup.balance_entries.length === 2 && backup.labour_entries.length === 2 && backup.wood_entries.length === 2 && backup.orders.some(order => order.id === fixture.order.id && order.items.length === 3));
+  check("Backup includes invoices, balances, labour, wood and embedded order items", backup.version === 4 && backup.invoices.length === 4 && backup.balance_entries.length === 2 && backup.labour_entries.length === 2 && backup.wood_entries.length === 3 && backup.orders.some(order => order.id === fixture.order.id && order.items.length === 3));
   for (const [name, path] of [["invoice", `/factory/invoices/${fixture.db.invoices[0].id}`], ["order", `/factory/orders/${fixture.order.id}/print`], ["labour", "/factory/expenses/labour/print?month=2026-09"]]) {
     await go(page, path); await page.locator(".ptf-document img").waitFor();
     await page.screenshot({ path: `${OUT}/${name}-print-preview.png`, fullPage: true });
@@ -243,7 +253,7 @@ try {
   fixture.db.invoices[0].total_amount = savedTotal;
   await page.emulateMedia({ media: null });
   await page.setViewportSize({ width: 375, height: 812 });
-  for (const [name, path] of [["dashboard", "/factory"], ["orders", "/factory/orders"], ["invoices", "/factory/invoices"], ["labour", "/factory/expenses/labour?month=2026-09"], ["wood", "/factory/expenses/wood?month=2026-10"], ["invoice", `/factory/invoices/${fixture.db.invoices[0].id}`]]) {
+  for (const [name, path] of [["dashboard", "/factory"], ["orders", "/factory/orders"], ["invoices", "/factory/invoices"], ["labour", "/factory/expenses/labour?month=2026-09"], ["wood", "/factory/expenses/wood?month=2026-11"], ["invoice", `/factory/invoices/${fixture.db.invoices[0].id}`]]) {
     await go(page, path);
     if (name === "orders") { await page.locator(".order-client > summary").filter({ hasText: "QA Pak Turk" }).click(); await page.locator(".order-branch > summary").first().click(); }
     check(`${name} fits a 375px mobile screen`, await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));

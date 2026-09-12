@@ -91,11 +91,11 @@ order amounts, payment records and old expense links are preserved for exports.
   when payments need to be allocated to separate dates. Do not also enter the same
   labour payment in general expenses. Historical general labour expenses remain
   in the general expense total and are not copied into the new labour sheet.
-- **Wood sheet:** record each supplier purchase and the payment actually made.
-  Purchases build the supplier balance across months; payments reduce that balance
-  and are included in factory expenses by payment date. The sheet shows monthly,
-  all-time, and per-supplier totals. Do not enter the same payment again as a
-  general expense.
+- **Wood sheet:** each supplier opens as a running account with its purchases and
+  payments underneath. Add another payment without changing an earlier purchase,
+  or add the next purchase in a later month; purchased, paid and remaining totals
+  update automatically. Payments are included in factory expenses by payment
+  date. Do not enter the same payment again as a general expense.
 - **Invoices:** item, quantity, unit amount, free-text stock/order source and
   calculated total. Client details are snapshotted. Edit issued invoices or void
   them while retaining the record. Voided invoices are excluded from Total sales.

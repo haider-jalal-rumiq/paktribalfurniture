@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import {
-  sumRupees, invoiceTotal, labourTotals, woodTotals, availableCredit, shopSaleAmounts,
+  sumRupees, invoiceTotal, labourTotals, woodTotals, woodAccounts, availableCredit, shopSaleAmounts,
   manualSalePrice, achievedMarginPct, shopTotals, invoiceDiscount, partnerSplit,
 } from "../src/lib/accounting-core.ts";
 let count = 0;
@@ -13,7 +13,14 @@ check(invoiceTotal([]), 0n, "Empty calculation");
 check(availableCredit(100000n, 7000n, 15000n), 78000n, "General and labour expenses both reduce Credit");
 check(availableCredit(0n, 7000n, 0n), -7000n, "Negative Credit is visible");
 check(availableCredit(100000n, 7000n, 15000n, 30000n), 48000n, "Wood payments also reduce Credit");
-check(woodTotals([{ purchased_amount: 20000, paid_amount: 10000 }, { purchased_amount: 30000, paid_amount: 20000 }]), { purchased: 50000n, paid: 30000n, remaining: 20000n }, "Wood purchaser balance carries across months");
+const woodLedger = [
+  { id: "1", purchaser_name: "Company B", purchased_amount: 200000, paid_amount: 50000 },
+  { id: "2", purchaser_name: "company b", purchased_amount: 0, paid_amount: 100000 },
+  { id: "3", purchaser_name: "Company B", purchased_amount: 400000, paid_amount: 0 },
+];
+check(woodTotals(woodLedger), { purchased: 600000n, paid: 150000n, remaining: 450000n }, "Separate wood purchases and payments carry across months");
+check(woodAccounts(woodLedger).length, 1, "Purchaser hierarchy groups name casing into one account");
+check(woodAccounts(woodLedger)[0]?.remaining, 450000n, "Purchaser hierarchy derives the running balance");
 check(woodTotals([]), { purchased: 0n, paid: 0n, remaining: 0n }, "Empty wood ledger");
 
 // Manual pricing: margin onto the purchase price, then a percentage discount.
