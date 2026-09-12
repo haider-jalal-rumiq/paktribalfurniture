@@ -11,17 +11,18 @@ export function cmsFixture() {
   const item = { id: id(), name: "Dining table", quantity: 2, status: "in_progress", notes: "Test wood finish" };
   const order = { id: id(), order_no: 1, client_id: client.id, title: "Campus furniture", description: "Workshop order", site_label: "Main campus", delivery_address: null, contact_phone: null, total_amount: 250000, order_date: "2026-09-09", expected_date: "2026-09-11", status: "pending", urgent: false, items: [item, { ...item, id: id(), name: "Chairs", quantity: 12, status: "completed" }], image_paths: [], notes: "Delivery notes", created_at: stamp, updated_at: stamp };
   const urgentOrder = { ...order, id: id(), order_no: 2, title: "Urgent reception desk", site_label: "Reception", urgent: true, items: [{ ...item, id: id(), name: "Reception desk" }] };
+  const schoolOrder = { ...order, id: id(), order_no: 3, client_id: school.id, title: "Library furniture", description: "Reading room storage", site_label: "Library", expected_date: "2027-12-01", items: [{ ...item, id: id(), name: "Bookcase", quantity: 1, status: "pending", notes: "180 x 90 x 40 cm; walnut stain" }] };
   const invoice = { id: id(), invoice_no: 1, client_id: client.id, client_name: client.name, client_address: client.address, client_phone: null, issued_on: "2026-09-20", items: [
     { id: id(), item: "Dining table", quantity: 1, amount: 8000, source: "Order" },
     { id: id(), item: "Dining chair", quantity: 2, amount: 1500, source: "Stock" },
     { id: id(), item: "Wooden stool", quantity: 1, amount: 1000, source: "Stock" },
   ], total_amount: 12000, notes: "Sample invoice for verification only.", status: "issued", created_at: stamp, updated_at: stamp };
   const db = {
-    clients: [client, school], orders: [order, urgentOrder], expenses: [{ id: id(), spent_on: "2026-09-09", category: "material", amount: 7000, note: "Test expense", order_id: null, created_at: stamp }],
+    clients: [client, school], orders: [order, urgentOrder, schoolOrder], expenses: [{ id: id(), spent_on: "2026-09-09", category: "material", amount: 7000, note: "Test expense", order_id: null, created_at: stamp }],
     order_payments: [], balance_entries: [{ id: id(), received_on: "2026-09-09", amount: 100000, note: "Test opening balance", created_at: stamp }],
     labour_entries: [{ id: id(), name: "QA Worker", period: "2026-09-01", paid_on: "2026-09-09", pay_basis: "monthly", salary: 40000, per_day_salary: 1000, days_worked: 0, item_count: 0, item_rate: 0, ot_hours: 0, ot_rate: 0, leave_deduction: 2000, deduction: 0, deduction_notes: null, total_amount: 38000, advance: 10000, salary_paid: 5000, leaves: 2, notes: "Agreed adjustment", created_at: stamp, updated_at: stamp }],
     invoices: [invoice, { ...invoice, id: id(), invoice_no: 2, issued_on: "2026-09-26", items: [{ ...invoice.items[0], quantity: 1, amount: 22000 }], total_amount: 22000 }, { ...invoice, id: id(), invoice_no: 3, client_id: school.id, client_name: school.name, issued_on: "2026-09-27", items: [{ ...invoice.items[0], quantity: 1, amount: 500 }], total_amount: 500 }],
-    shop_sales: [], shop_invoices: [], shop_expenses: [], products: [],
+    shop_sales: [], shop_invoices: [], shop_expenses: [], products: [], inventory_items: [],
   };
   const user = { id: id(), aud: "authenticated", role: "authenticated", email: "qa@example.test", app_metadata: { role: "admin", provider: "email" }, user_metadata: {}, created_at: stamp, identities: [] };
   const token = [Buffer.from(JSON.stringify({ alg: "HS256", typ: "JWT" })).toString("base64url"), Buffer.from(JSON.stringify({ sub: user.id, exp: Math.floor(Date.now()/1000) + 86400, iat: Math.floor(Date.now()/1000), aud: "authenticated", role: "authenticated", app_metadata: { role: "admin" } })).toString("base64url"), "local-test-signature"].join(".");
