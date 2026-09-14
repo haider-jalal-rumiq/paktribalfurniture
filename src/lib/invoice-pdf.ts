@@ -22,14 +22,46 @@ const HAIRLINE = [203, 210, 200] as const;
 /** Column x positions: serial, item, qty (right), unit (right), total (right). */
 const COL = { serial: MARGIN, item: MARGIN + 26, qty: MARGIN + 330, unit: MARGIN + 400, total: RIGHT };
 
+// public/images/brand-mark.png, 537x523 — the same icon Document renders
+// beside the brand lockup on screen and in print.
+const LOGO_WIDTH = 34;
+const LOGO_HEIGHT = LOGO_WIDTH * (523 / 537);
+const LOGO_GAP = 10;
+
 const rupees = (value: number | bigint) => formatPkr(value).replace(/^Rs /, "");
 
 export function invoiceFileName(reference: string): string {
   return `${reference.replace(/[^A-Za-z0-9-]+/g, "-")}.pdf`;
 }
 
+/**
+ * The brand mark as a small data URL jsPDF can embed. The source PNG is
+ * 537x523 for crisp on-screen use; drawn onto a small canvas first so the
+ * PDF embeds a couple of KB instead of the raw 842KB bitmap (jsPDF stores
+ * addImage() pixels largely uncompressed). Null if it can't be loaded — the
+ * PDF still builds, just without the icon.
+ */
+async function loadLogo(): Promise<string | null> {
+  try {
+    const response = await fetch("/images/brand-mark.png");
+    if (!response.ok) return null;
+    const bitmap = await createImageBitmap(await response.blob());
+    const width = 160;
+    const height = Math.round(width * (bitmap.height / bitmap.width));
+    const canvas = document.createElement("canvas");
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return null;
+    ctx.drawImage(bitmap, 0, 0, width, height);
+    return canvas.toDataURL("image/png");
+  } catch {
+    return null;
+  }
+}
+
 export async function invoicePdfBlob(invoice: InvoiceLike, brand: Brand, reference: string): Promise<Blob> {
-  const { jsPDF } = await import("jspdf");
+  const [{ jsPDF }, logo] = await Promise.all([import("jspdf"), loadLogo()]);
   const doc = new jsPDF({ unit: "pt", format: "a4" });
 
   let y = MARGIN;
@@ -53,16 +85,19 @@ export async function invoicePdfBlob(invoice: InvoiceLike, brand: Brand, referen
     y = MARGIN;
   };
 
-  // Header: brand lockup left, document title right.
+  // Header: logo mark + brand lockup left, document title right.
+  if (logo) doc.addImage(logo, "PNG", MARGIN, MARGIN, LOGO_WIDTH, LOGO_HEIGHT);
+  const brandX = logo ? MARGIN + LOGO_WIDTH + LOGO_GAP : MARGIN;
+  const brandTop = logo ? MARGIN + (LOGO_HEIGHT - brand.lines.length * 16) / 2 + 12 : MARGIN + 14;
   brand.lines.forEach((line, index) => {
-    y = MARGIN + 14 + index * 16;
-    text(line, MARGIN, { size: 14, bold: true });
+    y = brandTop + index * 16;
+    text(line, brandX, { size: 14, bold: true });
   });
   y = MARGIN + 14;
   text(invoice.status === "void" ? "Voided invoice" : "Invoice", RIGHT, { align: "right", size: 20, bold: true, color: ACCENT });
   y += 18;
   text(reference, RIGHT, { align: "right", size: 10, bold: true });
-  y = MARGIN + 14 + brand.lines.length * 16 + 4;
+  y = MARGIN + Math.max(LOGO_HEIGHT, 14 + brand.lines.length * 16) + 4;
   text(brand.phone, MARGIN, { size: 9, color: MUTED });
 
   y += 22;

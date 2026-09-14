@@ -5,6 +5,7 @@ import { useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Field, Input } from "@/components/ui/field";
+import { expenseCategorySuggestions } from "@/content/cms";
 import { expenseInputSchema } from "@/features/cms/expense.schema";
 import { today } from "@/lib/cms-core";
 import { formatPkr, parseAmount } from "@/lib/money";
@@ -42,7 +43,10 @@ export function ShopExpenseForm() {
           <Input id="shopExpenseAmount" name="amount" inputMode="numeric" value={amount} onChange={(event) => setAmount(event.target.value)} placeholder="5000" required />
         </Field>
         <Field label="Category" htmlFor="shopExpenseCategory">
-          <Input id="shopExpenseCategory" name="category" maxLength={80} placeholder="Rent, labour, transport" required />
+          <Input id="shopExpenseCategory" name="category" list="shop-expense-category-options" maxLength={80} placeholder="Type or pick a category" required />
+          <datalist id="shop-expense-category-options">
+            {expenseCategorySuggestions.map((category) => <option key={category} value={category} />)}
+          </datalist>
         </Field>
         <Field label="Date" htmlFor="shopExpenseDate">
           <Input id="shopExpenseDate" name="spentOn" type="date" defaultValue={today()} required />
