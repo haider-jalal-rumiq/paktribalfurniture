@@ -3,9 +3,10 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Boxes, ClipboardList, LayoutDashboard, ReceiptText, Settings, Store, Users, Wallet } from "lucide-react";
+import { Boxes, ClipboardList, LayoutDashboard, Lock, ReceiptText, Settings, Store, Users, Wallet } from "lucide-react";
 import type { ComponentType } from "react";
 
+import { isOpenPath } from "@/lib/area-lock";
 import { cn } from "@/lib/utils";
 
 type Tab = { href: string; label: string; icon: ComponentType<{ className?: string }> };
@@ -42,6 +43,11 @@ const APPS = [
 
 function isActive(pathname: string, href: string, base: string): boolean {
   return href === base ? pathname === base : pathname.startsWith(href);
+}
+
+/** A small badge so a locked tab reads as locked before it is ever clicked. */
+function LockBadge() {
+  return <Lock className="h-3 w-3 shrink-0 text-muted" aria-hidden="true" />;
 }
 
 export function CmsNav() {
@@ -90,6 +96,7 @@ export function CmsNav() {
               >
                 <tab.icon className="h-4 w-4" aria-hidden="true" />
                 {tab.label}
+                {!isOpenPath(tab.href) && <LockBadge />}
                 {active && (
                   <span
                     aria-hidden="true"
@@ -127,11 +134,12 @@ export function CmsNav() {
                 </span>
                 <span
                   className={cn(
-                    "text-[0.7rem] font-semibold leading-none",
+                    "flex items-center gap-0.5 text-[0.7rem] font-semibold leading-none",
                     active ? "text-accent" : "text-muted",
                   )}
                 >
                   {tab.label}
+                  {!isOpenPath(tab.href) && <LockBadge />}
                 </span>
               </Link>
             );
