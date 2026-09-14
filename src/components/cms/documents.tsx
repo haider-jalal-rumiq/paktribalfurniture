@@ -111,6 +111,10 @@ export function LabourDocument({ entries, month }: { entries: LabourEntry[]; mon
             {entry.ot_hours > 0 ? ` · OT ${entry.ot_hours} h @ ${formatPkr(entry.ot_rate)}` : ""}
             {entry.deduction > 0 ? ` · other deduction ${formatPkr(entry.deduction)}${entry.deduction_notes ? ` (${entry.deduction_notes})` : ""}` : ""}
           </p>
+          {/* Dated advances, so a printed sheet shows when each was handed over. */}
+          {entry.advances?.length > 0 && <p className="mt-1 text-xs text-muted">
+            {entry.advances.map((advance) => `${showDate(advance.paid_on)} advance ${formatPkr(advance.amount)}${advance.note ? ` (${advance.note})` : ""}`).join(" · ")}
+          </p>}
         </td>
         <td data-label="Regular pay" className="number">{formatPkr(totals.regularPay)}</td>
         <td data-label="Overtime" className="number">{formatPkr(totals.overtime)}</td>

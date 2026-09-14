@@ -13,13 +13,15 @@ export type InvoiceItem = {
   code?: string;
 };
 export type BalanceEntry = { id: string; received_on: string; amount: number; note: string; created_at: string };
+/** One dated advance handed to a worker against this payslip. */
+export type LabourAdvance = { id: string; paid_on: string; amount: number; note: string | null };
 export type LabourEntry = {
   id: string; name: string; period: string; paid_on: string;
   pay_basis: "monthly" | "daily" | "per_item"; salary: number;
   per_day_salary: number; days_worked: number; item_count: number; item_rate: number;
   ot_hours: number; ot_rate: number; leave_deduction: number; deduction: number;
   deduction_notes: string | null;
-  total_amount: number; advance: number; salary_paid: number; leaves: number;
+  total_amount: number; advances: LabourAdvance[]; advance: number; salary_paid: number; leaves: number;
   notes: string | null; created_at: string; updated_at: string;
 };
 export type WoodEntry = {
