@@ -82,6 +82,15 @@ export const labourPayBasisValues = labourPayBases.map((basis) => basis.value) a
 /** Legacy category labels remain readable; new expenses accept any category. */
 export const labourExpenseLabel = "Labour payments";
 
+/**
+ * Suggested categories offered under the expense form's category field (a
+ * <datalist>, not an enum — the field stays free text, so typing anything
+ * else still saves). Shared by the factory and shop expense forms.
+ */
+export const expenseCategorySuggestions = [
+  "Hardware", "Kitchen", "Miscellaneous", "Rent", "Bill", "Polish", "Petrol", "Gas", "Others",
+] as const;
+
 import { site } from "@/content/site";
 
 /**
