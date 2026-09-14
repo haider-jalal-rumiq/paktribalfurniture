@@ -3,7 +3,7 @@ import { Calculator, ReceiptText, Store } from "lucide-react";
 
 import { CmsPage, EmptyState, NotConfigured, SectionHeading } from "@/components/cms/cms-page";
 import { Badge } from "@/components/ui/badge";
-import { Button, ButtonLink } from "@/components/ui/button";
+import { ButtonLink } from "@/components/ui/button";
 import { partnerShares } from "@/content/cms";
 import { RecordAction } from "@/features/cms/record-action";
 import { SaleCostForm } from "@/features/shop/sale-cost-form";
@@ -45,9 +45,10 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
     getShopExpenses(),
   ]);
 
-  // Deducting expenses is a deliberate act, so it lives in the URL rather than
-  // in component state — the owner can bookmark or reload the net figure.
-  const deducting = expenseParam === "1";
+  // Net of expenses is the real figure, so it is what the page shows by
+  // default: a URL-only opt-in was lost on every navigation, quietly dropping
+  // the split back to gross. `?expenses=0` asks for the gross view instead.
+  const deducting = expenseParam !== "0";
   const totals = shopTotals(sales);
   const expenses = sumRupees(shopExpenses);
   const net = deducting ? totals.profit - expenses : totals.profit;
@@ -110,14 +111,11 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
             </p>
           </div>
           {deducting ? (
-            <ButtonLink href="/shop" size="sm" variant="outline" className="w-full sm:w-auto">Show gross profit</ButtonLink>
+            <ButtonLink href="/shop?expenses=0" size="sm" variant="outline" className="w-full sm:w-auto">Show gross profit</ButtonLink>
           ) : (
-            <form action="/shop" className="w-full sm:w-auto">
-              <input type="hidden" name="expenses" value="1" />
-              <Button type="submit" size="sm" className="w-full sm:w-auto">
-                <Calculator className="h-4 w-4" aria-hidden="true" />Calculate expense
-              </Button>
-            </form>
+            <ButtonLink href="/shop" size="sm" className="w-full sm:w-auto">
+              <Calculator className="h-4 w-4" aria-hidden="true" />Deduct expenses
+            </ButtonLink>
           )}
         </div>
 
@@ -129,7 +127,7 @@ export default async function ShopPage({ searchParams }: { searchParams: Promise
             {formatPkr(net)}
           </p>
           <p className="mt-2 text-xs text-muted">
-            {deducting ? "Gross profit less shop expenses" : "Expenses not deducted yet"}
+            {deducting ? "Gross profit less shop expenses" : "Gross profit — expenses not deducted"}
           </p>
         </div>
 

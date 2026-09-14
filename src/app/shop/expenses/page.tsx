@@ -22,8 +22,9 @@ export default async function ShopExpensesPage() {
     <CmsPage title="Expenses" eyebrow="Pak Tribal Furniture">
       <p className="mb-5 max-w-2xl text-sm text-muted">
         The shop&apos;s own costs — rent, labour, transport, anything spent running the showroom.
-        These are the expenses <Link href="/shop" className="font-semibold text-accent">Calculate expense</Link> deducts
-        from gross profit. The factory&apos;s expenses are kept separately in the CMS and are not counted here.
+        These come straight off gross profit on <Link href="/shop" className="font-semibold text-accent">Shop sales</Link>,
+        so the net profit and the partner split there already include them. The factory&apos;s expenses are kept
+        separately in the CMS and are not counted here.
       </p>
 
       <div className="grid gap-3 sm:grid-cols-3">

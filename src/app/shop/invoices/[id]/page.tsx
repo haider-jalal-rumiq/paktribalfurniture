@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 
 import { CmsPage } from "@/components/cms/cms-page";
 import { InvoiceDocument } from "@/components/cms/documents";
+import { InvoiceShare } from "@/components/cms/invoice-share";
 import { PrintButton } from "@/components/cms/print-button";
 import { shopBrand } from "@/content/cms";
 import { RecordAction } from "@/features/cms/record-action";
@@ -16,27 +17,24 @@ export default async function ShopInvoicePage({ params }: { params: Promise<{ id
   if (!invoice) notFound();
 
   const reference = shopInvoiceNumber(invoice.invoice_no);
+  const printable = {
+    client_name: invoice.customer_name,
+    client_address: invoice.customer_address,
+    client_phone: invoice.customer_phone,
+    issued_on: invoice.issued_on,
+    items: invoice.items,
+    discount_pct: invoice.discount_pct,
+    total_amount: invoice.total_amount,
+    notes: invoice.notes,
+    status: invoice.status,
+  };
 
   return (
     <CmsPage title={reference} eyebrow={invoice.customer_name} backHref="/shop/invoices" actions={<PrintButton />}>
-      <p className="print-controls mb-5 text-sm text-muted">
-        Choose Save as PDF in the print window to download and share this invoice.
-      </p>
-      <InvoiceDocument
-        brand={shopBrand}
-        reference={reference}
-        invoice={{
-          client_name: invoice.customer_name,
-          client_address: invoice.customer_address,
-          client_phone: invoice.customer_phone,
-          issued_on: invoice.issued_on,
-          items: invoice.items,
-          discount_pct: invoice.discount_pct,
-          total_amount: invoice.total_amount,
-          notes: invoice.notes,
-          status: invoice.status,
-        }}
-      />
+      <div className="print-controls mb-5">
+        <InvoiceShare invoice={printable} brand={shopBrand} reference={reference} />
+      </div>
+      <InvoiceDocument brand={shopBrand} reference={reference} invoice={printable} />
       {invoice.status === "issued" && (
         <RecordAction
           url={`/api/shop/invoices/${id}`}

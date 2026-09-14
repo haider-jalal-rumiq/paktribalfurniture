@@ -82,13 +82,15 @@ export const labourPayBasisValues = labourPayBases.map((basis) => basis.value) a
 /** Legacy category labels remain readable; new expenses accept any category. */
 export const labourExpenseLabel = "Labour payments";
 
+import { site } from "@/content/site";
+
 /**
  * Trading names on printed documents. `lines` is the stacked lockup in the
  * document header; the CSS gives the last line the smaller treatment.
  * /cms bills the factory work, /shop bills the showroom counter.
  */
-export const invoiceBrand = { name: "WOODONA HERITAGE", lines: ["WOODONA", "HERITAGE"] } as const;
-export const shopBrand = { name: "PAK TRIBAL FURNITURE", lines: ["PAK TRIBAL", "FURNITURE"] } as const;
+export const invoiceBrand = { name: "WOODONA HERITAGE", lines: ["WOODONA", "HERITAGE"], phone: "+92 336 5193323" } as const;
+export const shopBrand = { name: "PAK TRIBAL FURNITURE", lines: ["PAK TRIBAL", "FURNITURE"], phone: site.whatsapp.display } as const;
 
 /** The two shop partners split net profit. Shares must add up to 100. */
 export const partnerShares = { minor: 30, major: 70 } as const;

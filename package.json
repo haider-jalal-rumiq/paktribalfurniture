@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit",
     "verify": "node scripts/verify.mjs",
     "check:cms": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/cms-check.mjs && node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/accounting-check.mjs",
-    "verify:cms": "node scripts/verify-cms.mjs"
+    "verify:cms": "node scripts/verify-cms.mjs",
+    "verify:shop": "node scripts/verify-shop.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.1",
@@ -20,6 +21,7 @@
     "@types/web-push": "^3.6.4",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
+    "jspdf": "^4.2.1",
     "lucide-react": "^1.38.0",
     "motion": "^13.1.1",
     "next": "16.3.3",
