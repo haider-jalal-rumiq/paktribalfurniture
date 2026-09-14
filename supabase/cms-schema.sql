@@ -303,6 +303,43 @@ begin
   end if;
 end $$;
 alter table public.labour_entries add column if not exists deduction_notes text;
+
+-- Advances are dated rows, so the sheet can show that Rs 2,000 was taken on a
+-- particular day. The payslip's `advance` column stays as their sum: the
+-- dashboard, backups and the month rollup all read it unchanged, and the CHECK
+-- below re-computes it from the rows so the two can never disagree.
+create or replace function public.cms_labour_advance_total(entries jsonb)
+returns bigint language plpgsql immutable security invoker set search_path = '' as $$
+declare entry jsonb; total bigint := 0;
+begin
+  if jsonb_typeof(entries) <> 'array' or jsonb_array_length(entries) > 50 then
+    raise exception 'Invalid labour advances';
+  end if;
+  for entry in select value from jsonb_array_elements(entries) loop
+    if not (entry ?& array['id','paid_on','amount']) then raise exception 'Invalid labour advance'; end if;
+    if jsonb_typeof(entry->'amount') <> 'number'
+      or (entry->>'amount') !~ '^[0-9]+$' or (entry->>'amount')::bigint not between 1 and 999999999999
+      or (entry->>'paid_on') !~ '^\d{4}-\d{2}-\d{2}$'
+      or (entry->>'id') !~ '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$'
+      or (entry ? 'note' and jsonb_typeof(entry->'note') not in ('null','string'))
+      or char_length(coalesce(entry->>'note','')) > 200
+      then raise exception 'Invalid labour advance'; end if;
+    total := total + (entry->>'amount')::bigint;
+  end loop;
+  if total > 999999999999 then raise exception 'Invalid labour advance total'; end if;
+  return total;
+end;
+$$;
+alter table public.labour_entries add column if not exists advances jsonb not null default '[]'::jsonb;
+-- An advance already recorded becomes one row dated by the payslip's payment date.
+update public.labour_entries
+  set advances = jsonb_build_array(jsonb_build_object(
+    'id', gen_random_uuid()::text, 'paid_on', to_char(paid_on, 'YYYY-MM-DD'), 'amount', advance))
+  where advance > 0 and advances = '[]'::jsonb;
+alter table public.labour_entries drop constraint if exists labour_entries_advances_check;
+alter table public.labour_entries add constraint labour_entries_advances_check
+  check (public.cms_labour_advance_total(advances) = advance);
+
 alter table public.labour_entries drop constraint if exists labour_entries_leave_deduction_check;
 alter table public.labour_entries add constraint labour_entries_leave_deduction_check
   check (leave_deduction between 0 and 999999999999);

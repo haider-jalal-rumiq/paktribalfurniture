@@ -167,6 +167,10 @@ src/
   and balance. `lib/labour-write.ts` is the only writer of
   `labour_entries.total_amount`, and it uses that same function. Totals may go
   negative when deductions exceed earnings — that is shown, not clamped.
+- **An advance is a dated row.** `labour_entries.advances` is a jsonb list of
+  `{id, paid_on, amount, note}`; the `advance` column is their sum, and the
+  `labour_entries_advances_check` CHECK recomputes it so the two cannot drift.
+  The month rollup still attributes a payslip to its own `paid_on`.
 - **A wood supplier balance is computed, never stored.** Purchases increase the
   payable and separate actual-payment rows reduce it; never overwrite an earlier
   purchase to record a later payment. Only `wood_entries.paid_amount` reduces

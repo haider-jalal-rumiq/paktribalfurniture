@@ -106,6 +106,14 @@ export function invoiceDiscount(subtotal: bigint, discountPct: number) {
 }
 
 /**
+ * Advances are kept as dated rows so the sheet can show when each one was
+ * handed over. The payslip's single `advance` figure is their sum.
+ */
+export function advanceTotal(advances: readonly { amount: number }[]) {
+  return advances.reduce((sum, row) => sum + BigInt(row.amount), 0n);
+}
+
+/**
  * Labour payslip. Regular pay depends on the worker's agreed basis: monthly
  * salary, days worked (with optional item work), or items completed. Overtime
  * applies to every basis.

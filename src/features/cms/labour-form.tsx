@@ -1,12 +1,13 @@
 "use client";
 import { useRef, useState } from "react";
+import { Plus, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { FormSection, StickyActions } from "@/components/cms/cms-page";
 import { Button } from "@/components/ui/button";
 import { Field, Input, Textarea } from "@/components/ui/field";
 import { labourPayBases, type LabourPayBasis } from "@/content/cms";
 import { labourInputSchema } from "@/features/cms/accounting.schema";
-import { labourTotals } from "@/lib/accounting-core";
+import { advanceTotal, labourTotals, showDate } from "@/lib/accounting-core";
 import { currentMonth, today } from "@/lib/cms-core";
 import { formatPkr, parseAmount } from "@/lib/money";
 import { submitRequest } from "@/lib/submit";
@@ -14,6 +15,9 @@ import type { LabourEntry } from "@/types/database";
 
 /** Every money input is a controlled string so the payslip can total live. */
 const money = (value: number | undefined, fallback = "0") => (value === undefined ? fallback : String(value));
+
+/** An advance while it is being typed: every field is a string, like the rest of the form. */
+type AdvanceRow = { id: string; paidOn: string; amount: string; note: string };
 
 /** Optional money input: blank reads as zero, matching optionalAmountField(). */
 const optionalAmount = (value: string) => (value.trim() === "" ? 0 : parseAmount(value));
@@ -31,7 +35,9 @@ export function LabourForm({ entry, month }: { entry?: LabourEntry; month?: stri
   const [otRate, setOtRate] = useState(money(entry?.ot_rate));
   const [leaveDeduction, setLeaveDeduction] = useState(money(entry?.leave_deduction));
   const [deduction, setDeduction] = useState(money(entry?.deduction));
-  const [advance, setAdvance] = useState(money(entry?.advance));
+  const [advances, setAdvances] = useState<AdvanceRow[]>(
+    (entry?.advances ?? []).map((row) => ({ id: row.id, paidOn: row.paid_on, amount: String(row.amount), note: row.note ?? "" })),
+  );
   const [paid, setPaid] = useState(money(entry?.salary_paid));
   const [saving, setSaving] = useState(false), [saved, setSaved] = useState(false), [error, setError] = useState("");
 
@@ -41,7 +47,12 @@ export function LabourForm({ entry, month }: { entry?: LabourEntry; month?: stri
   const otRateAmount = parseAmount(otRate);
   const leaveDeductionAmount = parseAmount(payBasis === "monthly" ? leaveDeduction : "0");
   const deductionAmount = optionalAmount(deduction);
-  const advanceAmount = optionalAmount(advance);
+  // Blank or half-typed advance rows are ignored until they hold a real amount,
+  // so the payslip below keeps totalling while a row is being filled in.
+  const advanceRows = advances.map((row) => ({ ...row, parsed: optionalAmount(row.amount) }));
+  const advanceAmount = advanceRows.every((row) => row.parsed !== null)
+    ? Number(advanceTotal(advanceRows.map((row) => ({ amount: row.parsed! }))))
+    : null;
   const paidAmount = parseAmount(paid);
   const activeDays = Number(payBasis === "daily" ? daysWorked : 0);
   const activeItems = Number(payBasis === "daily" || payBasis === "per_item" ? itemCount : 0);
@@ -71,9 +82,17 @@ export function LabourForm({ entry, month }: { entry?: LabourEntry; month?: stri
       })
     : null;
 
+  function updateAdvance(id: string, change: Partial<AdvanceRow>) {
+    setAdvances(advances.map((row) => (row.id === id ? { ...row, ...change } : row)));
+  }
+
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault(); setError(""); requestId.current ||= crypto.randomUUID();
-    const parsed = labourInputSchema.safeParse({ ...Object.fromEntries(new FormData(event.currentTarget)), id: requestId.current });
+    const parsed = labourInputSchema.safeParse({
+      ...Object.fromEntries(new FormData(event.currentTarget)),
+      id: requestId.current,
+      advances,
+    });
     if (!parsed.success) { setError(parsed.error.issues[0]?.message ?? "Check the labour entry."); return; }
     setSaving(true);
     const result = await submitRequest(entry ? `/api/cms/labour/${entry.id}` : "/api/cms/labour", { method: entry ? "PUT" : "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(parsed.data) });
@@ -165,8 +184,20 @@ export function LabourForm({ entry, month }: { entry?: LabourEntry; month?: stri
     </FormSection>
 
     <FormSection title="Payments">
-      <Field label="Advance paid (Rs)" htmlFor="advance" hint="Optional."><Input id="advance" name="advance" inputMode="numeric" value={advance} onChange={(event) => setAdvance(event.target.value)} /></Field>
-      <Field label="Amount paid, excluding advance (Rs)" htmlFor="salaryPaid"><Input id="salaryPaid" name="salaryPaid" inputMode="numeric" value={paid} onChange={(event) => setPaid(event.target.value)} required /></Field>
+      <div className="space-y-3 sm:col-span-2">
+        <p className="text-sm text-muted">Advances taken during the month. Each one keeps its own date.</p>
+        {advances.map((row, index) => <fieldset key={row.id} className="rounded-[var(--radius-ui)] border border-hairline p-4">
+          <legend className="px-2 text-xs font-bold text-muted">Advance {index + 1}</legend>
+          <div className="grid gap-3 sm:grid-cols-3">
+            <Field label="Date taken" htmlFor={`advanceDate-${row.id}`}><Input id={`advanceDate-${row.id}`} type="date" value={row.paidOn} onChange={(event) => updateAdvance(row.id, { paidOn: event.target.value })} required /></Field>
+            <Field label="Amount (Rs)" htmlFor={`advanceAmount-${row.id}`}><Input id={`advanceAmount-${row.id}`} inputMode="numeric" value={row.amount} onChange={(event) => updateAdvance(row.id, { amount: event.target.value })} required /></Field>
+            <Field label="Reason" htmlFor={`advanceNote-${row.id}`} hint="Optional."><Input id={`advanceNote-${row.id}`} maxLength={200} value={row.note} onChange={(event) => updateAdvance(row.id, { note: event.target.value })} /></Field>
+          </div>
+          <Button type="button" size="sm" variant="ghost" className="mt-3" onClick={() => setAdvances(advances.filter((other) => other.id !== row.id))}><Trash2 className="h-4 w-4" aria-hidden="true" />Remove advance {index + 1}</Button>
+        </fieldset>)}
+        <Button type="button" variant="outline" size="sm" disabled={advances.length >= 50} onClick={() => setAdvances([...advances, { id: crypto.randomUUID(), paidOn: today(), amount: "", note: "" }])}><Plus className="h-4 w-4" aria-hidden="true" />Add advance</Button>
+      </div>
+      <Field label="Amount paid, excluding advances (Rs)" htmlFor="salaryPaid"><Input id="salaryPaid" name="salaryPaid" inputMode="numeric" value={paid} onChange={(event) => setPaid(event.target.value)} required /></Field>
       <Field label="General notes" htmlFor="labourNotes" className="sm:col-span-2"><Textarea id="labourNotes" name="notes" maxLength={1000} defaultValue={entry?.notes ?? ""} /></Field>
     </FormSection>
 
@@ -182,7 +213,11 @@ export function LabourForm({ entry, month }: { entry?: LabourEntry; month?: stri
           {payBasis === "monthly" && line(`Leave deduction (${activeLeaves} ${activeLeaves === 1 ? "day" : "days"})`, `− ${formatPkr(totals.leaveDeduction)}`)}
           {line("Other deduction", `− ${formatPkr(deductionAmount!)}`)}
           <div className="border-t border-hairline pt-2">{line("Total payable", formatPkr(totals.total), "text-accent")}</div>
-          {line("Advance + amount paid", `− ${formatPkr(totals.paid)}`)}
+          {advanceRows.map((row, index) => row.parsed && row.paidOn
+            ? <div key={row.id}>{line(`Advance ${index + 1} · ${showDate(row.paidOn)}${row.note ? ` · ${row.note}` : ""}`, `− ${formatPkr(row.parsed)}`)}</div>
+            : null)}
+          {line("Amount paid", `− ${formatPkr(paidAmount ?? 0)}`)}
+          {line("Advances + amount paid", `− ${formatPkr(totals.paid)}`)}
           <div className="border-t border-hairline pt-2">
             <div className="flex items-baseline justify-between gap-3">
               <dt className="font-semibold text-ink-soft">Balance remaining</dt>
@@ -194,7 +229,7 @@ export function LabourForm({ entry, month }: { entry?: LabourEntry; month?: stri
         <p className="mt-3 text-sm text-muted">Fill in the amounts above to see the payslip.</p>
       )}
       <p className="mt-3 text-xs text-muted">
-        Advance and amount paid count as expenses and reduce Credit. Do not add the same payment again as a general expense.
+        Advances and amount paid count as expenses and reduce Credit. Do not add the same payment again as a general expense.
       </p>
     </section>
 

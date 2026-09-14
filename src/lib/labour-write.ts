@@ -1,7 +1,7 @@
 import "server-only";
 import { labourInputSchema } from "@/features/cms/accounting.schema";
 import { orNull } from "@/features/cms/fields";
-import { labourTotals } from "@/lib/accounting-core";
+import { advanceTotal, labourTotals } from "@/lib/accounting-core";
 import { getCmsSession } from "@/lib/cms";
 
 export async function saveLabour(request: Request, id?: string) {
@@ -13,12 +13,15 @@ export async function saveLabour(request: Request, id?: string) {
   if (id && id !== v.id) return Response.json({ message: "Check the labour entry." }, { status: 400 });
   // Total is computed here and nowhere else, from the same function the sheet
   // displays, so the stored figure can never disagree with the inputs beside it.
+  // Each advance keeps its own date; `advance` is their sum, which the database
+  // CHECK re-computes so the column can never drift from the rows beside it.
+  const advances = v.advances.map((row) => ({ id: row.id, paid_on: row.paidOn, amount: row.amount, note: orNull(row.note) }));
   const inputs = { pay_basis: v.payBasis, salary: v.salary, per_day_salary: v.perDaySalary,
     days_worked: v.daysWorked, item_count: v.itemCount, item_rate: v.itemRate,
     ot_hours: v.otHours, ot_rate: v.otRate, leave_deduction: v.leaveDeduction,
     deduction: v.deduction, deduction_notes: orNull(v.deductionNotes), leaves: v.leaves,
-    advance: v.advance, salary_paid: v.salaryPaid };
-  const record = { name: v.name, period: `${v.period}-01`, paid_on: v.paidOn, ...inputs,
+    advance: Number(advanceTotal(advances)), salary_paid: v.salaryPaid };
+  const record = { name: v.name, period: `${v.period}-01`, paid_on: v.paidOn, ...inputs, advances,
     total_amount: Number(labourTotals(inputs).total), notes: orNull(v.notes) };
   const { data, error } = id
     ? await session.supabase.from("labour_entries").update(record).eq("id", id).select("id").maybeSingle()

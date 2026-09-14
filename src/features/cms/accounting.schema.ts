@@ -2,7 +2,7 @@ import { z } from "zod";
 
 import { labourPayBasisValues } from "@/content/cms";
 import { amountField, dateField, optionalAmountField, optionalText } from "@/features/cms/fields";
-import { invoiceTotal, labourTotals } from "@/lib/accounting-core";
+import { advanceTotal, invoiceTotal, labourTotals } from "@/lib/accounting-core";
 import { MAX_AMOUNT } from "@/lib/money";
 
 export const balanceInputSchema = z.object({
@@ -34,6 +34,14 @@ export const invoiceInputSchema = z.object({
   return total > 0n && total <= BigInt(MAX_AMOUNT);
 }, { message: "The invoice total must be between Rs 1 and Rs 999,999,999,999", path: ["items"] });
 
+/** One advance, with the date it was handed over. */
+export const labourAdvanceSchema = z.object({
+  id: z.uuid(),
+  paidOn: dateField("Enter a valid advance date"),
+  amount: amountField("Enter the advance in whole rupees"),
+  note: optionalText(200),
+});
+
 /**
  * A payslip's inputs. Total payable and balance are computed by labourTotals(),
  * never typed — so advance and salary paid are no longer checked against the
@@ -56,7 +64,7 @@ export const labourInputSchema = z.object({
   leaveDeduction: amountField("Enter the leave deduction in whole rupees", { allowZero: true }),
   deduction: optionalAmountField("Enter any other deduction in whole rupees"),
   deductionNotes: optionalText(1000),
-  advance: optionalAmountField("Enter the advance in whole rupees"),
+  advances: z.array(labourAdvanceSchema).max(50, "That is too many advances for one payslip"),
   salaryPaid: amountField("Enter salary paid in whole rupees", { allowZero: true }),
   leaves: z.coerce.number().int().min(0).max(31),
   notes: optionalText(1000),
@@ -85,7 +93,7 @@ export const labourInputSchema = z.object({
     leave_deduction: value.leaveDeduction,
     deduction: value.deduction,
     leaves: value.leaves,
-    advance: value.advance,
+    advance: Number(advanceTotal(value.advances.map((row) => ({ amount: row.amount })))),
     salary_paid: value.salaryPaid,
   }).total;
   if (total < -BigInt(MAX_AMOUNT) || total > BigInt(MAX_AMOUNT)) {

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import {
-  sumRupees, invoiceTotal, labourTotals, woodTotals, woodAccounts, availableCredit, shopSaleAmounts,
+  sumRupees, invoiceTotal, labourTotals, advanceTotal, woodTotals, woodAccounts, availableCredit, shopSaleAmounts,
   manualSalePrice, achievedMarginPct, shopTotals, invoiceDiscount, partnerSplit,
 } from "../src/lib/accounting-core.ts";
 let count = 0;
@@ -58,6 +58,9 @@ check(labourTotals(shift), { regularPay: 45000n, dailyPay: 0n, itemPay: 0n, leav
 check(labourTotals({ ...shift, leaves: 0, leave_deduction: 0, ot_hours: 0, deduction: 0 }).total, 45000n, "Bare salary when nothing is added or taken off");
 check(labourTotals({ ...shift, salary: 1000, deduction: 5000, ot_hours: 0, leaves: 0, leave_deduction: 0 }).total, -4000n, "Over-deduction shows as negative rather than clamping to zero");
 check(labourTotals({ ...shift, advance: 0, salary_paid: 0 }).balance, 44040n, "Nothing paid yet leaves the whole total owing");
+check(advanceTotal([{ amount: 2000 }, { amount: 500 }]), 2500n, "Dated advances add up to the payslip's advance figure");
+check(advanceTotal([]), 0n, "No advances taken is zero, not undefined");
+check(labourTotals({ ...shift, advance: Number(advanceTotal([{ amount: 2000 }, { amount: 500 }])), salary_paid: 0 }).balance, 41540n, "Advances taken on separate dates reduce the balance by their sum");
 const daily = { ...shift, pay_basis: "daily", salary: 0, days_worked: 24, per_day_salary: 1800, item_count: 4, item_rate: 900, leaves: 0, leave_deduction: 0 };
 check(labourTotals(daily).regularPay, 44100n, "A daily worker's item payment is added as written, never multiplied by the item count");
 check(labourTotals(daily).itemPay, 900n, "Item payment is the lump sum typed in");
