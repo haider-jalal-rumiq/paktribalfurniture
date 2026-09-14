@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 
+import { AreaGate } from "@/components/cms/area-gate";
+
 export const metadata: Metadata = {
   title: { default: "Factory", template: "%s | PTF Factory" },
   robots: { index: false, follow: false },
@@ -15,5 +17,5 @@ export const viewport: Viewport = { themeColor: "#ffffff", colorScheme: "light" 
 export const dynamic = "force-dynamic";
 
 export default function FactoryLayout({ children }: { children: ReactNode }) {
-  return children;
+  return <AreaGate>{children}</AreaGate>;
 }
