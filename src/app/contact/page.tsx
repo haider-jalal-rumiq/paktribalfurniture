@@ -24,10 +24,29 @@ export default async function ContactPage({ searchParams }: { searchParams: Prom
             <div className="mt-7 space-y-3 text-sm font-semibold">
               <a href={site.whatsapp.href} className="block text-accent underline underline-offset-4">WhatsApp {site.whatsapp.display}</a>
               <a href={site.instagramUrl} target="_blank" rel="noreferrer" className="block text-accent underline underline-offset-4">Instagram @paktribalfurniture</a>
+              <a href={site.map.href} target="_blank" rel="noreferrer" className="block text-accent underline underline-offset-4">Get directions</a>
             </div>
           </Reveal>
           <Reveal id="enquiry" className="scroll-mt-28 border border-hairline bg-surface p-6 sm:p-10">
             <InquiryForm categorySlug={selected?.slug} />
+          </Reveal>
+        </Container>
+      </section>
+      <section className="pb-16 sm:pb-24">
+        <Container>
+          <Reveal>
+            <h2 className="font-display text-3xl text-ink">Find us</h2>
+            <div className="mt-6 aspect-video w-full overflow-hidden border border-hairline">
+              <iframe
+                src={site.map.embedSrc}
+                width="100%"
+                height="100%"
+                style={{ border: 0 }}
+                loading="lazy"
+                referrerPolicy="strict-origin-when-cross-origin"
+                title={`${site.name} location on Google Maps`}
+              />
+            </div>
           </Reveal>
         </Container>
       </section>
