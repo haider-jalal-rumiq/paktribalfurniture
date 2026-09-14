@@ -56,15 +56,29 @@ export function cmsFixture() {
     if (["POST", "PATCH"].includes(req.method)) {
       let raw = ""; for await (const chunk of req) raw += chunk;
       const data = JSON.parse(raw || "{}");
-      if (req.method === "POST") {
+      if (req.method === "POST" && Array.isArray(data)) {
+        rows = data.map(entry => {
+          const row = { id: id(), created_at: stamp, updated_at: stamp, ...entry };
+          if (table === "shop_sales") Object.assign(row, { sale_no: db.shop_sales.length + 1, cost: row.cost ?? null, returned_on: row.returned_on ?? null, margin_pct: row.margin_pct ?? null, discount_pct: row.discount_pct ?? 0 });
+          db[table].push(row);
+          return row;
+        });
+      } else if (req.method === "POST") {
         if (data.id && db[table].some(r => r.id === data.id)) rows = [];
         else { const row = { id: id(), created_at: stamp, updated_at: stamp, ...data };
           if (table === "invoices") Object.assign(row, { invoice_no: db.invoices.length + 1, status: "issued" });
           if (table === "orders") Object.assign(row, { order_no: db.orders.length + 1, total_amount: 0 });
+          if (table === "shop_invoices") Object.assign(row, { invoice_no: db.shop_invoices.length + 1, status: "issued" });
+          if (table === "shop_sales") Object.assign(row, { sale_no: db.shop_sales.length + 1, cost: row.cost ?? null, returned_on: row.returned_on ?? null });
           db[table].push(row); rows = [row];
         }
       } else for (const row of rows) Object.assign(row, data);
       if (table === "invoices") for (const row of rows) row.total_amount = row.items.reduce((n, r) => n + r.amount*r.quantity, 0);
+      // Mirrors the generated column cms_shop_invoice_total(): subtotal less the rounded discount.
+      if (table === "shop_invoices") for (const row of rows) {
+        const subtotal = row.items.reduce((n, r) => n + r.amount*r.quantity, 0);
+        row.total_amount = subtotal - Math.floor((subtotal * row.discount_pct + 50) / 100);
+      }
     }
     for (const sort of (url.searchParams.get("order") ?? "").split(",").reverse()) {
       const [key, direction] = sort.split(".");

@@ -9,7 +9,7 @@ import type { OrderDetail } from "@/lib/cms";
 import type { InvoiceItem, LabourEntry } from "@/types/database";
 
 /** A printed trading name: the stacked lockup lines plus the full name for a11y. */
-export type Brand = { readonly name: string; readonly lines: readonly string[] };
+export type Brand = { readonly name: string; readonly lines: readonly string[]; readonly phone: string };
 
 export function Document({ title, reference, children, className = "", brand }: { title: string; reference?: string; children: ReactNode; className?: string; brand?: Brand }) {
   return <article className={`ptf-document ${className}`}>
@@ -19,7 +19,7 @@ export function Document({ title, reference, children, className = "", brand }: 
           <LogoMark className="invoice-brand-mark" />
           <p className="invoice-brand-name" aria-label={brand.name}>{brand.lines.map((line) => <span key={line}>{line}</span>)}</p>
         </div> : <Logo className="w-44 sm:w-52" />}
-        <p className="mt-3 text-xs text-muted">{site.whatsapp.display}</p>
+        <p className="mt-3 text-xs text-muted">{brand?.phone ?? site.whatsapp.display}</p>
       </div>
       <div className="sm:text-right"><h2 className="font-display text-3xl text-accent">{title}</h2>{reference && <p className="mt-2 text-sm font-semibold tabular-nums text-ink">{reference}</p>}</div>
     </header>
