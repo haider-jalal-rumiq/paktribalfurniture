@@ -56,7 +56,9 @@ export const labourInputSchema = z.object({
   payBasis: z.enum(labourPayBasisValues),
   salary: amountField("Enter the salary in whole rupees", { allowZero: true }),
   perDaySalary: amountField("Enter the per-day salary in whole rupees", { allowZero: true }),
-  daysWorked: z.coerce.number().int().min(0, "Days worked cannot be negative").max(31, "Days worked cannot exceed 31"),
+  // A decimal, not an integer: a half day worked is 9.5. The database rounds
+  // to one decimal place, so anything finer is tidied there rather than rejected.
+  daysWorked: z.coerce.number().min(0, "Days worked cannot be negative").max(31, "Days worked cannot exceed 31"),
   itemCount: z.coerce.number().int().min(0, "Item work cannot be negative").max(1_000_000, "That is too many items"),
   itemRate: optionalAmountField("Enter the item payment in whole rupees"),
   otHours: z.coerce.number().int().min(0, "Overtime cannot be negative").max(1000, "That is too many hours"),

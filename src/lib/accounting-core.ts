@@ -128,8 +128,11 @@ export function labourTotals(entry: {
   leave_deduction: number;
   advance: number; salary_paid: number;
 }) {
+  // days_worked may be a half day (9.5) for a daily worker, so this cannot be
+  // two BigInts multiplied — rounded to the nearest whole rupee instead, the
+  // same half-up convention invoiceDiscount() uses for percentages.
   const dailyPay = entry.pay_basis === "daily"
-    ? BigInt(entry.days_worked) * BigInt(entry.per_day_salary)
+    ? BigInt(Math.round(entry.days_worked * entry.per_day_salary))
     : 0n;
   // A daily worker's item payment is the lump sum written down; the item count
   // beside it only records how much work that covered, so it is NOT a rate to

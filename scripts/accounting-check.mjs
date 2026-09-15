@@ -66,6 +66,8 @@ check(labourTotals(daily).regularPay, 44100n, "A daily worker's item payment is 
 check(labourTotals(daily).itemPay, 900n, "Item payment is the lump sum typed in");
 check(labourTotals({ ...daily, item_count: 40 }).regularPay, 44100n, "Changing the item count alone cannot change what is paid");
 check(labourTotals({ ...daily, item_count: 0, item_rate: 0 }).regularPay, 43200n, "Days alone when there was no item work");
+check(labourTotals({ ...daily, days_worked: 9.5, per_day_salary: 1000, item_count: 0, item_rate: 0 }).dailyPay, 9500n, "A half day worked is a real half day, not truncated to 9");
+check(labourTotals({ ...daily, days_worked: 9.5, per_day_salary: 1001, item_count: 0, item_rate: 0 }).dailyPay, 9510n, "A half-rupee day rate rounds to the nearest whole rupee, half up");
 check(labourTotals({ ...shift, pay_basis: "per_item", salary: 0, per_day_salary: 0, item_count: 18, item_rate: 900, leaves: 0, leave_deduction: 0 }).regularPay, 16200n, "Per-item worker pay is items completed times the item rate");
 
 check(partnerSplit(11500n, 30n), { minor: 3450n, major: 8050n }, "30/70 split");

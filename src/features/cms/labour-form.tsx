@@ -59,9 +59,12 @@ export function LabourForm({ entry, month }: { entry?: LabourEntry; month?: stri
   const activeLeaves = Number(payBasis === "monthly" ? leaves : 0);
   const overtimeHours = Number(otHours);
   const amounts = [salaryAmount, perDayAmount, itemRateAmount, otRateAmount, leaveDeductionAmount, deductionAmount, advanceAmount, paidAmount];
-  const counts = [activeDays, activeItems, activeLeaves, overtimeHours];
+  // Days worked is the one count that can be a half day (9.5); everything
+  // else here is still whole units.
+  const wholeCounts = [activeItems, activeLeaves, overtimeHours];
   const ready = amounts.every((value) => value !== null)
-    && counts.every((value) => Number.isInteger(value) && value >= 0);
+    && wholeCounts.every((value) => Number.isInteger(value) && value >= 0)
+    && Number.isFinite(activeDays) && activeDays >= 0;
   // The same function the server stores with, so the number below the fields is
   // exactly the number that will be saved.
   const totals = ready
@@ -140,8 +143,8 @@ export function LabourForm({ entry, month }: { entry?: LabourEntry; month?: stri
         <input type="hidden" name="daysWorked" value="0" /><input type="hidden" name="itemCount" value="0" /><input type="hidden" name="itemRate" value="0" />
       </>}
       {payBasis === "daily" && <>
-        <Field label="No. of days worked" htmlFor="daysWorked">
-          <Input id="daysWorked" name="daysWorked" type="number" min={0} max={31} step={1} value={daysWorked} onChange={(event) => setDaysWorked(event.target.value)} required />
+        <Field label="No. of days worked" htmlFor="daysWorked" hint="Half days are fine — e.g. 9.5.">
+          <Input id="daysWorked" name="daysWorked" type="number" min={0} max={31} step={0.5} value={daysWorked} onChange={(event) => setDaysWorked(event.target.value)} required />
         </Field>
         <Field label="Rate per day (Rs)" htmlFor="perDaySalary" hint={totals ? `Regular pay ${formatPkr(totals.regularPay)}` : undefined}>
           <Input id="perDaySalary" name="perDaySalary" inputMode="numeric" value={perDay} onChange={(event) => setPerDay(event.target.value)} required />
