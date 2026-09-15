@@ -66,7 +66,9 @@ alter table public.labour_entries add column if not exists ot_rate bigint not nu
 alter table public.labour_entries add column if not exists deduction bigint not null default 0
   check (deduction between 0 and 999999999999);
 alter table public.labour_entries add column if not exists pay_basis text not null default 'monthly';
-alter table public.labour_entries add column if not exists days_worked integer not null default 0;
+-- numeric(4,1), not integer: a daily worker can do a half day (9.5).
+alter table public.labour_entries add column if not exists days_worked numeric(4,1) not null default 0;
+alter table public.labour_entries alter column days_worked type numeric(4,1) using days_worked::numeric(4,1);
 alter table public.labour_entries add column if not exists item_count integer not null default 0;
 alter table public.labour_entries add column if not exists item_rate bigint not null default 0;
 alter table public.labour_entries drop constraint if exists labour_entries_pay_basis_check;
