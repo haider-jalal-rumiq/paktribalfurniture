@@ -60,7 +60,7 @@ async function loadLogo(): Promise<string | null> {
   }
 }
 
-export async function invoicePdfBlob(invoice: InvoiceLike, brand: Brand, reference: string): Promise<Blob> {
+export async function invoicePdfBlob(invoice: InvoiceLike, brand: Brand, reference: string, title?: string): Promise<Blob> {
   const [{ jsPDF }, logo] = await Promise.all([import("jspdf"), loadLogo()]);
   const doc = new jsPDF({ unit: "pt", format: "a4" });
 
@@ -94,7 +94,7 @@ export async function invoicePdfBlob(invoice: InvoiceLike, brand: Brand, referen
     text(line, brandX, { size: 14, bold: true });
   });
   y = MARGIN + 14;
-  text(invoice.status === "void" ? "Voided invoice" : "Invoice", RIGHT, { align: "right", size: 20, bold: true, color: ACCENT });
+  text(title ?? (invoice.status === "void" ? "Voided invoice" : "Invoice"), RIGHT, { align: "right", size: 20, bold: true, color: ACCENT });
   y += 18;
   text(reference, RIGHT, { align: "right", size: 10, bold: true });
   y = MARGIN + Math.max(LOGO_HEIGHT, 14 + brand.lines.length * 16) + 4;

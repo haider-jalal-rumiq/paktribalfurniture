@@ -24,7 +24,7 @@ function save(blob: Blob, name: string) {
   URL.revokeObjectURL(url);
 }
 
-export function InvoiceShare({ invoice, brand, reference }: { invoice: InvoiceLike; brand: Brand; reference: string }) {
+export function InvoiceShare({ invoice, brand, reference, title }: { invoice: InvoiceLike; brand: Brand; reference: string; title?: string }) {
   const [busy, setBusy] = useState<"download" | "whatsapp" | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -32,7 +32,7 @@ export function InvoiceShare({ invoice, brand, reference }: { invoice: InvoiceLi
     setBusy(action);
     setError(null);
     try {
-      return await invoicePdfBlob(invoice, brand, reference);
+      return await invoicePdfBlob(invoice, brand, reference, title);
     } catch {
       setError("Could not build the PDF. Use Print / Save PDF instead.");
       return null;

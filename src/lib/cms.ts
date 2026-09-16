@@ -112,6 +112,15 @@ export async function getInvoice(id: string): Promise<Invoice | null> {
   return data;
 }
 
+/** A hand-picked set of invoices, for combining several into one billable PDF. */
+export async function getInvoicesByIds(ids: string[]): Promise<Invoice[]> {
+  const supabase = await createSupabaseServerClient();
+  if (!supabase || !ids.length) return [];
+  const { data, error } = await supabase.from("invoices").select("*").in("id", ids);
+  if (error) { console.error("Could not load invoices", { code: error.code, message: error.message }); return []; }
+  return data ?? [];
+}
+
 export async function getBalanceEntries(): Promise<BalanceEntry[]> {
   const supabase = await createSupabaseServerClient();
   if (!supabase) return [];
