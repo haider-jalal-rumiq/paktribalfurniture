@@ -37,10 +37,10 @@ export type InvoiceLike = {
   notes: string | null; status: "issued" | "void";
 };
 
-export function InvoiceDocument({ invoice, brand = invoiceBrand, reference }: { invoice: InvoiceLike; brand?: Brand; reference?: string }) {
+export function InvoiceDocument({ invoice, brand = invoiceBrand, reference, title }: { invoice: InvoiceLike; brand?: Brand; reference?: string; title?: string }) {
   const discountPct = invoice.discount_pct ?? 0;
   const subtotal = invoiceTotal(invoice.items);
-  return <Document title={invoice.status === "void" ? "Voided invoice" : "Invoice"} reference={reference} className="invoice-document" brand={brand}>
+  return <Document title={title ?? (invoice.status === "void" ? "Voided invoice" : "Invoice")} reference={reference} className="invoice-document" brand={brand}>
     <div className="document-parties">
       <div><p className="document-label">Bill to</p><p className="mt-2 break-words text-lg font-semibold">{invoice.client_name}</p>{invoice.client_address && <p className="mt-1 whitespace-pre-wrap break-words text-sm text-ink-soft">{invoice.client_address}</p>}{invoice.client_phone && <p className="mt-1 text-sm text-ink-soft">{invoice.client_phone}</p>}</div>
       <dl className="text-sm"><dt className="document-label">Invoice date</dt><dd className="mt-2">{showDate(invoice.issued_on)}</dd><dt className="document-label mt-4">Currency</dt><dd className="mt-2">Pakistani rupees (PKR)</dd></dl>
