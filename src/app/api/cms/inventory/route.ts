@@ -31,6 +31,7 @@ export async function POST(request: Request) {
     code: parsed.data.code,
     name: parsed.data.name,
     quantity: parsed.data.quantity,
+    price: parsed.data.price,
     note: orNull(parsed.data.note),
     image_path: imagePath,
   }).select("id").single();

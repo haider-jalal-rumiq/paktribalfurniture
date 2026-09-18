@@ -39,6 +39,7 @@ export async function PUT(request: Request, { params }: Params) {
     code: parsed.data.code,
     name: parsed.data.name,
     quantity: parsed.data.quantity,
+    price: parsed.data.price,
     note: orNull(parsed.data.note),
     image_path: imagePath,
   }).eq("id", id).select("id").maybeSingle();

@@ -47,6 +47,8 @@ export type ShopSale = {
 };
 export type InventoryItem = {
   id: string; item_no: number; code: string; name: string; quantity: number;
+  /** Selling price per piece, whole rupees. Seeds an invoice line's amount. */
+  price: number;
   image_path: string | null; note: string | null; created_at: string; updated_at: string;
 };
 export type ShopExpense = {

@@ -51,7 +51,7 @@ try {
   if (await page.getByText("This section is locked").isVisible().catch(() => false)) {
     await page.getByLabel("Password", { exact: true }).fill("1555");
     await page.getByRole("button", { name: "Unlock", exact: true }).click();
-    await page.waitForSelector("text=This section is locked", { state: "detached" });
+    await page.getByRole("heading", { name: "This section is locked" }).waitFor({ state: "detached" });
   }
   await page.getByRole("link", { name: /PTF-0001/ }).first().click();
   await page.waitForURL(/factory\/invoices\/[0-9a-f-]{8}/);
