@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import { orderStatusValues } from "@/content/cms";
 import {
+  amountField,
   checkboxField,
   dateField,
   oneOf,
@@ -16,6 +17,8 @@ export const orderItemSchema = z.object({
   quantity: z.coerce.number().int().min(1, "Quantity must be at least 1").max(10000),
   status: oneOf(orderStatusValues, "Choose an item status"),
   notes: z.string().trim().max(1000),
+  /** Zero is normal: plenty of orders are taken before a price is agreed. */
+  amount: amountField("Enter the item price in whole rupees", { allowZero: true }),
 });
 
 export const orderInputSchema = z.object({

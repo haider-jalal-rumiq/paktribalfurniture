@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import {
-  sumRupees, invoiceTotal, labourTotals, advanceTotal, woodTotals, woodAccounts, availableCredit, shopSaleAmounts,
+  sumRupees, invoiceTotal, orderTotal, labourTotals, advanceTotal, woodTotals, woodAccounts, availableCredit, shopSaleAmounts,
   manualSalePrice, achievedMarginPct, shopTotals, invoiceDiscount, partnerSplit,
 } from "../src/lib/accounting-core.ts";
 let count = 0;
@@ -10,6 +10,10 @@ check(sumRupees([{ amount: 999999999999 }, { amount: 1 }]), 1000000000000n, "Who
 check(sumRupees(Array.from({ length: 10000 }, () => ({ amount: 999999999999 }))), 9999999999990000n, "All-time sums exceed JS safe integer without losing precision");
 check(invoiceTotal([{ amount: 12500, quantity: 2 }, { amount: 4000, quantity: 3 }]), 37000n, "Invoice quantity multiplication");
 check(invoiceTotal([]), 0n, "Empty calculation");
+// An order's worth, so the sheet can say what finishing it pays.
+check(orderTotal([{ amount: 45000, quantity: 2 }, { amount: 8000, quantity: 1 }]), 98000n, "Order total is price per piece times quantity");
+check(orderTotal([{ quantity: 3 }, { amount: 5000, quantity: 1 }]), 5000n, "Items saved before prices existed count as zero, not as a crash");
+check(orderTotal([]), 0n, "An order with no items is worth nothing");
 check(availableCredit(100000n, 7000n, 15000n), 78000n, "General and labour expenses both reduce Credit");
 check(availableCredit(0n, 7000n, 0n), -7000n, "Negative Credit is visible");
 check(availableCredit(100000n, 7000n, 15000n, 30000n), 48000n, "Wood payments also reduce Credit");

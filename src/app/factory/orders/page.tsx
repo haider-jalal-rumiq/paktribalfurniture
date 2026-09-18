@@ -6,7 +6,9 @@ import { Badge, STATUS_TONE } from "@/components/ui/badge";
 import { ButtonLink } from "@/components/ui/button";
 import { orderStatuses, orderStatusLabel } from "@/content/cms";
 import { OrderFilters } from "@/features/cms/order-filters";
+import { orderTotal } from "@/lib/accounting-core";
 import { getClients, getOrders } from "@/lib/cms";
+import { formatPkr } from "@/lib/money";
 import { itemMatchesStatus, orderMatchesFilters } from "@/lib/order-filters";
 import { isUrgentOrder } from "@/lib/orders";
 import { cn } from "@/lib/utils";
@@ -33,6 +35,9 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
     .filter(({ item }) => itemMatchesStatus(item, status) && (!itemQuery || item.name.toLowerCase().includes(itemQuery)));
   const pieces = allItems.reduce((count, { item }) => count + item.quantity, 0);
   const itemOrders = new Set(allItems.map(({ order }) => order.id)).size;
+  // What finishing everything on screen is worth, on the same filters.
+  const itemsValue = orderTotal(allItems.map(({ item }) => item));
+  const ordersValue = orders.reduce((sum, order) => sum + orderTotal(order.items), 0n);
 
   const keep = (extra: Record<string, string>) => {
     const query = new URLSearchParams();
@@ -66,7 +71,10 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
     <OrderFilters byItems={byItems} clientId={clientId} clients={clients} itemQuery={params.item?.trim()} status={status} />
 
     {byItems ? <>
-      <p className="mb-4 text-sm text-muted">{allItems.length} item lines · {pieces} pieces across {itemOrders} orders.</p>
+      <div className="mb-4 flex flex-wrap items-baseline justify-between gap-3">
+        <p className="text-sm text-muted">{allItems.length} item lines · {pieces} pieces across {itemOrders} orders.</p>
+        <p className="text-sm text-muted">Worth on completion <span className="ml-1 break-all text-lg font-bold tabular-nums text-accent">{formatPkr(itemsValue)}</span></p>
+      </div>
       {allItems.length ? (
         <div className="overflow-x-auto rounded-[var(--radius-card)] border border-hairline bg-surface shadow-[var(--shadow-card)]">
           <table className="document-table">
@@ -74,6 +82,7 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
             <thead><tr>
               <th scope="col">Item</th>
               <th scope="col" className="number">Qty</th>
+              <th scope="col" className="number">Price</th>
               <th scope="col">Item status</th>
               <th scope="col">Order</th>
               <th scope="col">Client</th>
@@ -86,6 +95,12 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
                     {item.notes && <p className="mt-1 whitespace-pre-wrap break-words text-xs leading-relaxed text-muted"><span className="font-semibold text-ink-soft">Measurements / details:</span> {item.notes}</p>}
                   </td>
                   <td data-label="Qty" className="number">{item.quantity}</td>
+                  <td data-label="Price" className="number tabular-nums">
+                    {item.amount ? <>
+                      <span className="font-semibold">{formatPkr(orderTotal([item]))}</span>
+                      {item.quantity > 1 && <p className="mt-1 text-xs text-muted">{formatPkr(item.amount)} each</p>}
+                    </> : <span className="text-muted">—</span>}
+                  </td>
                   <td data-label="Item status"><Badge tone={STATUS_TONE[item.status]}>{orderStatusLabel(item.status)}</Badge></td>
                   <td data-label="Order">
                     <Link href={`/factory/orders/${order.id}`} className="font-semibold text-accent">#{order.order_no}</Link>
@@ -101,7 +116,10 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
         </div>
       ) : <EmptyState>No items match these filters.</EmptyState>}
     </> : <>
-      <p className="mb-4 text-sm text-muted">{shown.length} clients · {orders.length} orders · {pieces} pieces. Expand a client, then an order to see its items.</p>
+      <div className="mb-4 flex flex-wrap items-baseline justify-between gap-3">
+        <p className="text-sm text-muted">{shown.length} clients · {orders.length} orders · {pieces} pieces. Expand a client, then an order to see its items.</p>
+        <p className="text-sm text-muted">Worth on completion <span className="ml-1 break-all text-lg font-bold tabular-nums text-accent">{formatPkr(ordersValue)}</span></p>
+      </div>
       <OrderTree clients={shown} orders={orders} expandClients={Boolean(clientId)} />
     </>}
   </CmsPage>;
