@@ -186,6 +186,11 @@ begin
       or (entry->>'status') not in ('pending','in_progress','ready','completed','delivered','cancelled')
       or (entry->>'id') !~ '^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$'
       then return false; end if;
+    -- `amount` is the price per piece, added later: orders saved before it
+    -- simply have no key, and stay valid.
+    if entry ? 'amount' and (jsonb_typeof(entry->'amount') <> 'number'
+      or (entry->>'amount') !~ '^[0-9]+$' or (entry->>'amount')::bigint > 999999999999)
+      then return false; end if;
   end loop;
   return true;
 exception when others then return false;

@@ -7,6 +7,15 @@ export function invoiceTotal(items: readonly { amount: number; quantity: number 
   return items.reduce((sum, item) => sum + BigInt(item.amount) * BigInt(item.quantity), 0n);
 }
 
+/**
+ * What an order is worth: price per piece times quantity, over its items.
+ * An item saved before prices existed carries no `amount` and counts as zero,
+ * so an unpriced order reads as Rs 0 rather than breaking the page.
+ */
+export function orderTotal(items: readonly { amount?: number; quantity: number }[]): bigint {
+  return items.reduce((sum, item) => sum + BigInt(item.amount ?? 0) * BigInt(item.quantity), 0n);
+}
+
 export function availableCredit(added: bigint, expenses: bigint, labourPaid: bigint, woodPaid = 0n): bigint {
   return added - expenses - labourPaid - woodPaid;
 }

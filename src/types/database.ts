@@ -6,7 +6,11 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[];
 
-export type OrderItem = { id: string; name: string; quantity: number; status: string; notes: string };
+export type OrderItem = {
+  id: string; name: string; quantity: number; status: string; notes: string;
+  /** Price per piece, whole rupees. Absent on orders raised before pricing. */
+  amount?: number;
+};
 export type InvoiceItem = {
   id: string; item: string; quantity: number; amount: number; source: string;
   /** Inventory code, when the line came from stock. Drives the deduction. */

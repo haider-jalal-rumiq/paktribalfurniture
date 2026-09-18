@@ -13,21 +13,25 @@ import { OrderItemEditor } from "@/features/cms/order-items";
 import { orderInputSchema } from "@/features/cms/order.schema";
 import { today } from "@/lib/cms-core";
 import { submitRequest } from "@/lib/submit";
-import type { Client, Order } from "@/types/database";
+import type { Client, InventoryItem, Order, OrderItem } from "@/types/database";
 
 export function OrderForm({
   order,
   clients,
   photos = [],
   defaultClientId,
+  stock = [],
 }: {
   order?: Order;
   clients: Pick<Client, "id" | "name" | "type">[];
   photos?: { path: string; url: string }[];
   defaultClientId?: string;
+  stock?: InventoryItem[];
 }) {
   const router = useRouter();
-  const [items, setItems] = useState(order?.items ?? []);
+  // Orders raised before prices existed have items with no `amount`; give them
+  // zero on the way in, or the schema would reject an otherwise fine edit.
+  const [items, setItems] = useState<OrderItem[]>(order?.items.map((item) => ({ ...item, amount: item.amount ?? 0 })) ?? []);
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -135,7 +139,7 @@ export function OrderForm({
       </FormSection>
 
       <FormSection title="Order items" hint="Each item has its own status. The overall order status is set separately.">
-        <OrderItemEditor items={items} onChange={setItems} />
+        <OrderItemEditor items={items} onChange={setItems} stock={stock} />
       </FormSection>
 
       <FormSection title="Status and timing">
