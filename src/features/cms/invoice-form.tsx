@@ -24,13 +24,24 @@ export function InvoiceForm({ invoice, clients, stock = [], defaultClientId }: {
   const total = validAmounts ? invoiceTotal(amounts as { amount: number; quantity: number }[]) : null;
   function update(id: string, patch: Partial<DraftItem>) { setItems(items.map((row) => row.id === id ? { ...row, ...patch } : row)); }
   const byCode = new Map(stock.map((entry) => [entry.code.trim().toUpperCase(), entry]));
+  /**
+   * Picking an inventory item fills everything the line needs from it: the
+   * code (which is what actually takes stock out), the source, and its price
+   * as the starting amount. All three stay editable afterwards.
+   */
+  function fromStock(entry: InventoryItem): Partial<DraftItem> {
+    return { code: entry.code, source: "Stock", ...(entry.price > 0 ? { amount: String(entry.price) } : {}) };
+  }
   /** Says what the typed code will actually do to stock before saving. */
   function codeHint(code: string) {
     const trimmed = code.trim();
     if (!trimmed) return "Leave blank to bill without touching stock.";
     const match = byCode.get(trimmed.toUpperCase());
     if (!match) return "No inventory item has this code — nothing will be deducted.";
-    return `${match.name} · ${match.quantity} in stock`;
+    // Editing never re-adjusts stock: a second pass would double-deduct every
+    // line that did not change. Say so rather than implying another deduction.
+    if (invoice) return `${match.name} · ${match.quantity} in stock · editing does not change stock`;
+    return `${match.name} · ${match.quantity} in stock · saving takes this out`;
   }
   async function submit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault(); setError("");
@@ -62,14 +73,26 @@ export function InvoiceForm({ invoice, clients, stock = [], defaultClientId }: {
               <Input id={`inv-item-${row.id}`} list="inventory-names" value={row.item} maxLength={200} required
                 onChange={(e) => {
                   const match = stock.find((entry) => entry.name.toLowerCase() === e.target.value.trim().toLowerCase());
-                  update(row.id, match ? { item: e.target.value, code: match.code } : { item: e.target.value });
+                  update(row.id, match ? { item: e.target.value, ...fromStock(match) } : { item: e.target.value });
                 }} />
             </Field>
             <Field label="Code no." htmlFor={`inv-code-${row.id}`} hint={codeHint(row.code)}>
               <Input id={`inv-code-${row.id}`} list="inventory-codes" value={row.code} maxLength={40} placeholder="Optional"
-                onChange={(e) => update(row.id, { code: e.target.value })} />
+                onChange={(e) => {
+                  const match = byCode.get(e.target.value.trim().toUpperCase());
+                  if (!match) { update(row.id, { code: e.target.value }); return; }
+                  update(row.id, { ...fromStock(match), code: e.target.value, ...(row.item.trim() ? {} : { item: match.name }) });
+                }} />
             </Field>
-            <Field label="Stock / order" htmlFor={`source-${row.id}`}><Input id={`source-${row.id}`} value={row.source} onChange={(e) => update(row.id, { source: e.target.value })} placeholder="Type stock or order" maxLength={80} required /></Field>
+            <Field label="Stock / order" htmlFor={`source-${row.id}`} hint={row.source === "Stock" && !row.code.trim() ? "Add the code number so this comes out of inventory." : undefined}>
+              <Select id={`source-${row.id}`} value={row.source} onChange={(e) => update(row.id, { source: e.target.value })} required>
+                <option value="" disabled>Choose stock or order</option>
+                <option value="Stock">Stock</option>
+                <option value="Order">Order</option>
+                {/* Older invoices can carry other wording; keep it selectable. */}
+                {row.source && !["Stock", "Order"].includes(row.source) && <option value={row.source}>{row.source}</option>}
+              </Select>
+            </Field>
             <Field label="Quantity" htmlFor={`inv-qty-${row.id}`}><Input id={`inv-qty-${row.id}`} type="number" min={1} max={10000} step={1} value={row.quantity} onChange={(e) => update(row.id, { quantity: e.target.value })} required /></Field>
             <Field label="Unit amount (Rs)" htmlFor={`rate-${row.id}`}><Input id={`rate-${row.id}`} inputMode="numeric" value={row.amount} onChange={(e) => update(row.id, { amount: e.target.value })} required /></Field>
           </div>

@@ -57,7 +57,7 @@ try {
   // Correct PIN unlocks this tab, and every other locked tab too.
   await page.getByLabel("Password", { exact: true }).fill("1555");
   await page.getByRole("button", { name: "Unlock" }).click();
-  await page.waitForSelector("text=This section is locked", { state: "detached" });
+  await page.getByRole("heading", { name: "This section is locked" }).waitFor({ state: "detached" });
   check("correct PIN unlocks orders", await page.getByRole("heading", { name: "Orders" }).isVisible());
 
   await page.goto(BASE + "/factory/clients", { waitUntil: "networkidle" });
@@ -106,7 +106,7 @@ try {
   await page.screenshot({ path: ".verify-cms/area-lock-screen.png" });
   await page.getByLabel("Password", { exact: true }).fill("1555");
   await page.getByRole("button", { name: "Unlock", exact: true }).click();
-  await page.waitForSelector("text=This section is locked", { state: "detached" });
+  await page.getByRole("heading", { name: "This section is locked" }).waitFor({ state: "detached" });
   await page.screenshot({ path: ".verify-cms/area-lock-unlocked-strip.png" });
   await page.goto(BASE + "/factory/inventory", { waitUntil: "networkidle" });
   await page.screenshot({ path: ".verify-cms/area-lock-nav-badges.png" });

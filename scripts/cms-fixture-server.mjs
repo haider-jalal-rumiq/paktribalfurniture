@@ -69,6 +69,7 @@ export function cmsFixture() {
           if (table === "invoices") Object.assign(row, { invoice_no: db.invoices.length + 1, status: "issued" });
           if (table === "orders") Object.assign(row, { order_no: db.orders.length + 1, total_amount: 0 });
           if (table === "shop_invoices") Object.assign(row, { invoice_no: db.shop_invoices.length + 1, status: "issued" });
+          if (table === "inventory_items") Object.assign(row, { item_no: db.inventory_items.length + 1, price: row.price ?? 0, image_path: row.image_path ?? null });
           if (table === "shop_sales") Object.assign(row, { sale_no: db.shop_sales.length + 1, cost: row.cost ?? null, returned_on: row.returned_on ?? null });
           db[table].push(row); rows = [row];
         }

@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { ButtonLink } from "@/components/ui/button";
 import { getInventory } from "@/lib/cms";
 import { signedInventoryUrls } from "@/lib/inventory";
+import { formatPkr } from "@/lib/money";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { cn } from "@/lib/utils";
 
@@ -55,6 +56,7 @@ export default async function InventoryPage() {
             <th scope="col">Picture</th>
             <th scope="col">Code no.</th>
             <th scope="col">Item</th>
+            <th scope="col" className="number">Price</th>
             <th scope="col" className="number">Quantity</th>
           </tr></thead>
           <tbody>
@@ -75,6 +77,9 @@ export default async function InventoryPage() {
                   <td data-label="Item">
                     <Link href={`/factory/inventory/${item.id}`} className="font-semibold text-accent">{item.name}</Link>
                     {item.note && <p className="mt-1 break-words text-xs text-muted">{item.note}</p>}
+                  </td>
+                  <td data-label="Price" className="number tabular-nums">
+                    {item.price > 0 ? formatPkr(item.price) : <span className="text-muted">—</span>}
                   </td>
                   <td data-label="Quantity" className="number">
                     {/* Zero is the figure worth catching, so it is loud. */}

@@ -56,6 +56,13 @@ try {
   await page.getByLabel("Password", { exact: true }).fill("fixture-only");
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
   await page.waitForURL(BASE + "/factory");
+  // Home, Orders, Invoices, Clients and Settings sit behind the shared PIN;
+  // Inventory and Expenses do not. Unlock once for the rest of this run.
+  if (await page.getByText("This section is locked").isVisible().catch(() => false)) {
+    await page.getByLabel("Password", { exact: true }).fill("1555");
+    await page.getByRole("button", { name: "Unlock", exact: true }).click();
+    await page.getByRole("heading", { name: "This section is locked" }).waitFor({ state: "detached" });
+  }
   await page.getByText("Rs 22,000", { exact: true }).waitFor();
   check("Expenses include general expenses and paid labour", true);
   check("Invoices contribute to sales", await page.getByText("Rs 34,500", { exact: true }).count() === 1);
@@ -167,8 +174,10 @@ try {
   await page.getByLabel("Other deduction notes", { exact: true }).fill("Tool replacement");
   await page.getByLabel("No. of overtime hours").fill("2");
   await page.getByLabel("Rate per overtime hour (Rs)").fill("500");
-  await page.getByLabel("Advance paid (Rs)", { exact: true }).fill("2000");
-  await page.getByLabel("Amount paid, excluding advance (Rs)").fill("1000");
+  // Advances are dated rows now, not one figure on the payslip.
+  await page.getByRole("button", { name: "Add advance", exact: true }).click();
+  await page.locator("[id^=advanceAmount-]").first().fill("2000");
+  await page.getByLabel("Amount paid, excluding advances (Rs)").fill("1000");
   check("Monthly pay uses the entered leave deduction", await page.getByText("Rs 9,000", { exact: true }).count() === 1);
   await page.getByLabel("Daily worker").check();
   await page.getByLabel("No. of days worked").fill("6");
@@ -195,7 +204,7 @@ try {
   await page.getByLabel("Client", { exact: true }).selectOption(fixture.client.id);
   await page.getByRole("button", { name: "Add invoice item", exact: true }).click();
   await page.getByLabel("Item", { exact: true }).fill("QA wardrobe");
-  await page.getByLabel("Stock / order", { exact: true }).fill("Stock");
+  await page.getByLabel("Stock / order", { exact: true }).selectOption("Stock");
   await page.getByLabel("Quantity", { exact: true }).fill("2");
   await page.getByLabel("Unit amount (Rs)", { exact: true }).fill("2500");
   check("Invoice form multiplies quantity correctly", await page.getByText("Rs 5,000", { exact: true }).first().isVisible());

@@ -13,11 +13,20 @@ create table if not exists public.inventory_items (
   code text not null check (char_length(btrim(code)) between 1 and 40),
   name text not null check (char_length(btrim(name)) between 1 and 200),
   quantity integer not null default 0 check (quantity between 0 and 1000000),
+  price bigint not null default 0 check (price between 0 and 999999999999),
   image_path text check (char_length(image_path) <= 400),
   note text check (char_length(note) <= 400),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );
+
+-- The selling price per piece, in whole rupees like every other amount. An
+-- invoice line that picks this item starts from this price; the line itself
+-- stays editable, so the invoice remains the record of what was billed.
+alter table public.inventory_items add column if not exists price bigint not null default 0;
+alter table public.inventory_items drop constraint if exists inventory_items_price_check;
+alter table public.inventory_items add constraint inventory_items_price_check
+  check (price between 0 and 999999999999);
 
 -- Codes are matched case-insensitively when an invoice deducts stock, so they
 -- must be unique the same way: "ptf-01" and "PTF-01" are the same item.

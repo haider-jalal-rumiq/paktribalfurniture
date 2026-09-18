@@ -10,7 +10,13 @@ import { inventoryInputSchema } from "@/features/cms/inventory.schema";
 import { submitRequest } from "@/lib/submit";
 import type { InventoryItem } from "@/types/database";
 
-export function InventoryForm({ item, photo }: { item?: InventoryItem; photo?: string }) {
+/**
+ * `names` are the item names already in the inventory. They feed a native
+ * datalist under the name field, so typing "bed" offers "Bed", "Bed set",
+ * "Bed painted" — existing wording gets reused instead of re-invented, which
+ * is what keeps the stock list searchable. Typing something new still saves.
+ */
+export function InventoryForm({ item, photo, names = [] }: { item?: InventoryItem; photo?: string; names?: string[] }) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -49,11 +55,17 @@ export function InventoryForm({ item, photo }: { item?: InventoryItem; photo?: s
         <Field label="Code no." htmlFor="code" hint="For example PTF-LMP-01. Must be unique.">
           <Input id="code" name="code" maxLength={40} defaultValue={item?.code ?? ""} required />
         </Field>
-        <Field label="Item name" htmlFor="name">
-          <Input id="name" name="name" maxLength={200} defaultValue={item?.name ?? ""} required />
+        <Field label="Item name" htmlFor="name" hint={names.length ? "Pick an existing name or type a new one." : undefined}>
+          <Input id="name" name="name" list="inventory-item-names" maxLength={200} defaultValue={item?.name ?? ""} required />
+          <datalist id="inventory-item-names">
+            {names.map((name) => <option key={name} value={name} />)}
+          </datalist>
         </Field>
         <Field label="Quantity in stock" htmlFor="quantity">
           <Input id="quantity" name="quantity" type="number" min={0} max={1000000} step={1} defaultValue={item?.quantity ?? 0} required />
+        </Field>
+        <Field label="Price per piece (Rs)" htmlFor="price" hint="Used as the starting amount when this item is billed on an invoice.">
+          <Input id="price" name="price" inputMode="numeric" defaultValue={item?.price ?? 0} required />
         </Field>
         <Field label="Note" htmlFor="note">
           <Input id="note" name="note" maxLength={400} defaultValue={item?.note ?? ""} placeholder="Optional" />
