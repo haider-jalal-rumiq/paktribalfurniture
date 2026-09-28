@@ -2,10 +2,11 @@ import { Plus } from "lucide-react";
 import Link from "next/link";
 import { CmsPage, EmptyState } from "@/components/cms/cms-page";
 import { OrderTree } from "@/components/cms/order-tree";
-import { Badge, STATUS_TONE } from "@/components/ui/badge";
+import { Badge } from "@/components/ui/badge";
 import { ButtonLink } from "@/components/ui/button";
-import { orderStatuses, orderStatusLabel } from "@/content/cms";
+import { orderStatuses } from "@/content/cms";
 import { OrderFilters } from "@/features/cms/order-filters";
+import { OrderItemStatus, OrderUrgentToggle } from "@/features/cms/order-item-status";
 import { orderTotal } from "@/lib/accounting-core";
 import { getClients, getOrders } from "@/lib/cms";
 import { formatPkr } from "@/lib/money";
@@ -101,12 +102,15 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
                       {item.quantity > 1 && <p className="mt-1 text-xs text-muted">{formatPkr(item.amount)} each</p>}
                     </> : <span className="text-muted">—</span>}
                   </td>
-                  <td data-label="Item status"><Badge tone={STATUS_TONE[item.status]}>{orderStatusLabel(item.status)}</Badge></td>
+                  <td data-label="Item status"><OrderItemStatus orderId={order.id} itemId={item.id} status={item.status} /></td>
                   <td data-label="Order">
                     <Link href={`/factory/orders/${order.id}`} className="font-semibold text-accent">#{order.order_no}</Link>
                     <p className="mt-1 max-w-64 break-words text-xs font-medium text-ink-soft">{order.title}</p>
                     {order.description && <p className="mt-1 max-w-64 whitespace-pre-wrap break-words text-xs leading-relaxed text-muted">{order.description}</p>}
-                    {isUrgentOrder(order) && <p className="mt-1"><Badge tone="accent">Urgent</Badge></p>}
+                    {/* The badge is derived urgency (open and due soon); the
+                        toggle is the hand-ticked flag on the order itself. */}
+                    {isUrgentOrder(order) && !order.urgent && <p className="mt-1"><Badge tone="accent">Due soon</Badge></p>}
+                    <OrderUrgentToggle orderId={order.id} urgent={order.urgent} />
                   </td>
                   <td data-label="Client" className="font-semibold text-ink-soft">{order.clients?.name ?? "—"}</td>
                 </tr>
