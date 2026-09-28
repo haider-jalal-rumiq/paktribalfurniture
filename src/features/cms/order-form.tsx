@@ -65,9 +65,13 @@ export function OrderForm({
     // Confirm the save before navigating. Opening the order page can be slow,
     // and a spinner that never resolves reads as "it failed" — which is how the
     // same order ends up entered twice.
+    // A create pushes to a brand-new id, which cannot be in the client router
+    // cache — the refresh() that used to run here just fetched the same page a
+    // second time and doubled the wait. An edit returns to the page already in
+    // that cache, where the refresh is what makes the change show.
     setSaved(true);
     router.push(`/factory/orders/${result.id}`);
-    router.refresh();
+    if (order) router.refresh();
   }
 
   async function remove() {
@@ -87,7 +91,6 @@ export function OrderForm({
     }
 
     router.push("/factory/orders");
-    router.refresh();
   }
 
   if (!clients.length) {

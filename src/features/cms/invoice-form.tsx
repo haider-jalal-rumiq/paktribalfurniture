@@ -53,7 +53,7 @@ export function InvoiceForm({ invoice, clients, stock = [], defaultClientId }: {
       method: invoice ? "PUT" : "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(parsed.data),
     });
     if (!result.ok || !result.id) { setError(result.message || "The invoice could not be saved."); setSaving(false); return; }
-    setSaved(true); router.push(`/factory/invoices/${result.id}`); router.refresh();
+    setSaved(true); router.push(`/factory/invoices/${result.id}`); if (invoice) router.refresh();
   }
   if (!clients.length) return <p className="text-sm text-muted">Add a client before creating an invoice. <Link className="font-semibold text-accent" href="/factory/clients/new">Add client</Link></p>;
   return <form onSubmit={submit} className="space-y-4">
