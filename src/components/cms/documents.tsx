@@ -1,11 +1,11 @@
 import type { ReactNode } from "react";
 import { Logo, LogoMark } from "@/components/layout/logo";
 import { site } from "@/content/site";
-import { invoiceBrand, labourPayBasisLabel, orderStatusLabel } from "@/content/cms";
+import { expenseCategoryLabel, invoiceBrand, labourExpenseLabel, labourPayBasisLabel, orderStatusLabel } from "@/content/cms";
 import { formatPkr } from "@/lib/money";
 import { invoiceTotal, labourTotals, showDate } from "@/lib/accounting-core";
 import { monthLabel } from "@/lib/cms-core";
-import type { OrderDetail } from "@/lib/cms";
+import type { FactoryMonthReport, OrderDetail } from "@/lib/cms";
 import type { InvoiceItem, LabourEntry } from "@/types/database";
 
 /** A printed trading name: the stacked lockup lines plus the full name for a11y. */
@@ -131,5 +131,75 @@ export function LabourDocument({ entries, month }: { entries: LabourEntry[]; mon
     </dl>
     <p className="mt-6 text-xs text-muted">Total payable is day and/or item pay plus overtime, less applicable leave and other deductions. Total paid includes advance and the remaining amount paid.</p>
     {entries.some((row) => row.notes) && <section className="mt-6"><h3 className="document-label">Notes</h3>{entries.filter((row) => row.notes).map((row) => <p key={row.id} className="mt-2 whitespace-pre-wrap break-words text-sm"><strong>{row.name}:</strong> {row.notes}</p>)}</section>}
+  </Document>;
+}
+
+export function FactoryDashboardDocument({ report }: { report: FactoryMonthReport }) {
+  const { totals } = report;
+  return <Document title="Factory dashboard" reference={monthLabel(report.month)} brand={invoiceBrand}>
+    <p className="mb-6 text-sm text-muted">Monthly snapshot for {monthLabel(report.month)}. Live urgent and due-soon alerts are intentionally excluded because they describe today, not the selected month.</p>
+    <table className="document-table">
+      <caption className="sr-only">Factory dashboard totals for {monthLabel(report.month)}</caption>
+      <thead><tr><th scope="col">Dashboard number</th><th scope="col" className="number">{monthLabel(report.month)}</th></tr></thead>
+      <tbody>
+        <tr><td>Expenses</td><td className="number">{formatPkr(totals.expenses)}</td></tr>
+        <tr><td>Total sales</td><td className="number">{formatPkr(totals.sales)}</td></tr>
+        <tr><td>Orders created</td><td className="number">{totals.orders}</td></tr>
+        <tr><td>Order items</td><td className="number">{totals.orderItems}</td></tr>
+      </tbody>
+    </table>
+    <dl className="document-summary">
+      <div><dt>General expenses</dt><dd>{formatPkr(totals.generalExpenses)}</dd></div>
+      <div><dt>{labourExpenseLabel}</dt><dd>{formatPkr(totals.labourPaid)}</dd></div>
+      <div><dt>Wood payments</dt><dd>{formatPkr(totals.woodPaid)}</dd></div>
+    </dl>
+  </Document>;
+}
+
+export function FactoryExpenseDocument({ report }: { report: FactoryMonthReport }) {
+  const { totals } = report;
+  return <Document title="Factory expense report" reference={monthLabel(report.month)} brand={invoiceBrand}>
+    <p className="mb-6 text-sm text-muted">All factory cash expenses recorded in {monthLabel(report.month)}: general expenses, labour payments and wood payments.</p>
+    <table className="document-table">
+      <caption className="sr-only">Expense summary for {monthLabel(report.month)}</caption>
+      <thead><tr><th scope="col">Expense type</th><th scope="col" className="number">Amount</th></tr></thead>
+      <tbody>
+        <tr><td>General expenses</td><td className="number">{formatPkr(totals.generalExpenses)}</td></tr>
+        <tr><td>{labourExpenseLabel}</td><td className="number">{formatPkr(totals.labourPaid)}</td></tr>
+        <tr><td>Wood payments</td><td className="number">{formatPkr(totals.woodPaid)}</td></tr>
+      </tbody>
+    </table>
+
+    <h3 className="mb-3 mt-8 font-display text-2xl">General expenses</h3>
+    {report.expenses.length ? <table className="document-table">
+      <thead><tr><th scope="col">Date</th><th scope="col">Category / note</th><th scope="col" className="number">Amount</th></tr></thead>
+      <tbody>{report.expenses.map((row) => <tr key={row.id}>
+        <td data-label="Date">{showDate(row.spent_on)}</td>
+        <td data-label="Category / note">{expenseCategoryLabel(row.category)}{row.note && <p className="mt-1 text-xs text-muted">{row.note}</p>}</td>
+        <td data-label="Amount" className="number">{formatPkr(row.amount)}</td>
+      </tr>)}</tbody>
+    </table> : <p className="text-sm text-muted">No general expenses recorded.</p>}
+
+    <h3 className="mb-3 mt-8 font-display text-2xl">{labourExpenseLabel}</h3>
+    {report.labour.length ? <table className="document-table">
+      <thead><tr><th scope="col">Payment date</th><th scope="col">Worker</th><th scope="col" className="number">Paid</th></tr></thead>
+      <tbody>{report.labour.map((row) => <tr key={row.id}>
+        <td data-label="Payment date">{showDate(row.paid_on)}</td>
+        <td data-label="Worker">{row.name}<p className="mt-1 text-xs text-muted">{labourPayBasisLabel(row.pay_basis)}{row.notes ? ` · ${row.notes}` : ""}</p></td>
+        <td data-label="Paid" className="number">{formatPkr(labourTotals(row).paid)}</td>
+      </tr>)}</tbody>
+    </table> : <p className="text-sm text-muted">No labour payments recorded.</p>}
+
+    <h3 className="mb-3 mt-8 font-display text-2xl">Wood payments</h3>
+    {report.wood.length ? <table className="document-table">
+      <thead><tr><th scope="col">Payment date</th><th scope="col">Purchaser / note</th><th scope="col" className="number">Paid</th></tr></thead>
+      <tbody>{report.wood.map((row) => <tr key={row.id}>
+        <td data-label="Payment date">{showDate(row.paid_on)}</td>
+        <td data-label="Purchaser / note">{row.purchaser_name}{row.notes && <p className="mt-1 text-xs text-muted">{row.notes}</p>}</td>
+        <td data-label="Paid" className="number">{formatPkr(row.paid_amount)}</td>
+      </tr>)}</tbody>
+    </table> : <p className="text-sm text-muted">No wood payments recorded.</p>}
+
+    <div className="document-total"><span>Total expenses</span><strong>{formatPkr(totals.expenses)}</strong></div>
   </Document>;
 }

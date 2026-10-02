@@ -1,29 +1,33 @@
 import Link from "next/link";
-import { ReceiptText, ClipboardList, CalendarCheck, TriangleAlert, PackageCheck, PackageX, Boxes } from "lucide-react";
+import { ReceiptText, ClipboardList, CalendarCheck, TriangleAlert, PackageCheck, PackageX, Boxes, FileDown } from "lucide-react";
 import { CmsPage, EmptyState, NotConfigured, SectionHeading } from "@/components/cms/cms-page";
 import { StatCard } from "@/components/cms/stat-card";
 import { RecordList } from "@/components/cms/record-list";
-import { ButtonLink } from "@/components/ui/button";
+import { Button, ButtonLink } from "@/components/ui/button";
 import { Badge, STATUS_TONE } from "@/components/ui/badge";
+import { Field, Input } from "@/components/ui/field";
 import { openOrderStatuses, orderStatusLabel } from "@/content/cms";
-import { getAllOrders, getDueSoon, getFinancialTotals, getOutOfStock, getUrgentOrders, daysUntil } from "@/lib/cms";
+import { addDays, currentMonth, daysUntil, getAllOrders, getDueSoon, getFactoryMonthReport, getOutOfStock, getUrgentOrders, isMonth, monthLabel, monthRange, shiftMonth } from "@/lib/cms";
 import { isUrgentOrder } from "@/lib/orders";
 import { formatPkr } from "@/lib/money";
 import { hasSupabaseEnv } from "@/lib/supabase/config";
 export const metadata = { title: "Dashboard" };
 
-export default async function DashboardPage() {
+export default async function DashboardPage({ searchParams }: { searchParams: Promise<{ month?: string }> }) {
+  const { month: requestedMonth } = await searchParams;
+  const thisMonth = currentMonth();
+  const month = isMonth(requestedMonth) ? requestedMonth : thisMonth;
+  const months = [...new Set([thisMonth, shiftMonth(thisMonth, -1), month])];
+  const { start, end } = monthRange(month);
   const configured = hasSupabaseEnv();
-  const [totals, dueSoon, urgent, orders, outOfStock] = await Promise.all([
-    getFinancialTotals(), getDueSoon(), getUrgentOrders(), getAllOrders(), getOutOfStock(),
+  const [report, dueSoon, urgent, orders, outOfStock] = await Promise.all([
+    getFactoryMonthReport(month), getDueSoon(), getUrgentOrders(), getAllOrders(), getOutOfStock(),
   ]);
 
   const open = orders.filter((order) => (openOrderStatuses as readonly string[]).includes(order.status));
   const completed = orders.filter((order) => ["completed", "delivered"].includes(order.status));
-  // Pieces, not lines: six chairs on one line is six items to build.
-  const orderItems = orders.reduce((count, order) => count + order.items.reduce((n, item) => n + item.quantity, 0), 0);
   return <CmsPage eyebrow="Pak Tribal Furniture" title="Dashboard" actions={
-    <ButtonLink href="/factory/invoices/new" size="sm" variant="outline">New invoice</ButtonLink>
+    <><ButtonLink href={`/factory/print?month=${month}`} size="sm" variant="outline"><FileDown className="h-4 w-4" aria-hidden="true" />Print / PDF</ButtonLink><ButtonLink href="/factory/invoices/new" size="sm" variant="outline">New invoice</ButtonLink></>
   }>
     {!configured && <div className="mb-6"><NotConfigured /></div>}
     {/* 6. Restocking is the action, so the warning links straight to it. */}
@@ -38,20 +42,34 @@ export default async function DashboardPage() {
       </p>
       <Link href="/factory/inventory" className="mt-3 inline-flex min-h-11 items-center font-semibold text-accent">Add items in the inventory</Link>
     </div>}
-    {configured && !totals && <p role="alert" className="mb-6 rounded-[var(--radius-card)] border border-accent/30 p-4 text-sm text-accent-deep">Financial totals could not be loaded. Please refresh before recording money.</p>}
-    <p className="mb-4 text-xs font-semibold uppercase tracking-[0.14em] text-muted">All-time totals</p>
+    <section aria-labelledby="dashboard-month-heading" className="mb-6 rounded-[var(--radius-card)] border border-hairline bg-canvas-deep p-4">
+      <h2 id="dashboard-month-heading" className="font-display text-2xl">Dashboard month</h2>
+      <p className="mt-1 text-sm text-muted">Each month has its own sales, expenses, orders and item totals. Earlier months stay available.</p>
+      <div className="mt-4 flex flex-wrap gap-2" aria-label="Quick month choices">
+        {months.map((option) => <ButtonLink key={option} href={`/factory?month=${option}`} size="sm" variant={option === month ? "primary" : "outline"} aria-current={option === month ? "page" : undefined}>{monthLabel(option)}</ButtonLink>)}
+      </div>
+      <form action="/factory" className="mt-4 flex flex-wrap items-end gap-3">
+        <Field label="Choose another month" htmlFor="dashboardMonth"><Input key={month} id="dashboardMonth" name="month" type="month" defaultValue={month} required /></Field>
+        <Button type="submit" variant="outline">Show month</Button>
+      </form>
+    </section>
+    <p className="mb-4 text-xs font-semibold uppercase tracking-[0.14em] text-muted">{monthLabel(month)} totals</p>
     <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-      <StatCard label="Expenses" value={totals ? formatPkr(totals.expenses) : "—"} hint="General expenses + paid labour + wood payments" />
-      <StatCard label="Total sales" value={totals ? formatPkr(totals.sales) : "—"} icon={<ReceiptText className="h-4 w-4" />} hint="Issued invoices; excludes voided invoices" />
-      {/* 2. Both order tiles open the full list rather than being dead ends. */}
+      <Link href={`/factory/expenses?month=${month}`} className="rounded-[var(--radius-card)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent">
+        <StatCard label="Expenses" value={formatPkr(report.totals.expenses)} hint="General + paid labour + wood payments · open month" className="h-full transition-colors hover:border-accent" />
+      </Link>
+      <Link href={`/factory/invoices?from=${start}&to=${addDays(end, -1)}&status=issued`} className="rounded-[var(--radius-card)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent">
+        <StatCard label="Total sales" value={formatPkr(report.totals.sales)} icon={<ReceiptText className="h-4 w-4" />} hint="Issued this month; excludes voided invoices" className="h-full transition-colors hover:border-accent" />
+      </Link>
       <Link href="/factory/orders" className="rounded-[var(--radius-card)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent">
-        <StatCard label="Open orders" value={open.length} icon={<ClipboardList className="h-4 w-4" />} hint="Pending, in progress and ready · open the list" className="h-full transition-colors hover:border-accent" />
+        <StatCard label="Orders created" value={report.totals.orders} icon={<ClipboardList className="h-4 w-4" />} hint={`${monthLabel(month)} · open the order list`} className="h-full transition-colors hover:border-accent" />
       </Link>
       <Link href="/factory/orders?view=items" className="rounded-[var(--radius-card)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-accent">
-        <StatCard label="Order items" value={orderItems} icon={<Boxes className="h-4 w-4" />} hint="Pieces across every order · see them all" className="h-full transition-colors hover:border-accent" />
+        <StatCard label="Order items" value={report.totals.orderItems} icon={<Boxes className="h-4 w-4" />} hint={`Pieces in orders created in ${monthLabel(month)}`} className="h-full transition-colors hover:border-accent" />
       </Link>
     </div>
-    <div className="mt-4 flex flex-wrap gap-x-6 gap-y-2 text-sm"><Link href="/factory/balances" className="min-h-11 py-3 font-semibold text-accent">Balance history{totals ? ` · ${formatPkr(totals.added)} added` : ""}</Link><Link href="/factory/expenses" className="min-h-11 py-3 font-semibold text-accent">Record an expense</Link><Link href="/factory/expenses/labour" className="min-h-11 py-3 font-semibold text-accent">Labour sheet</Link><Link href="/factory/expenses/wood" className="min-h-11 py-3 font-semibold text-accent">Wood sheet</Link></div>
+    <div className="mt-4 flex flex-wrap gap-x-6 gap-y-2 text-sm"><Link href="/factory/balances" className="min-h-11 py-3 font-semibold text-accent">Balance history</Link><Link href={`/factory/expenses?month=${month}`} className="min-h-11 py-3 font-semibold text-accent">Record an expense</Link><Link href={`/factory/expenses/labour?month=${month}`} className="min-h-11 py-3 font-semibold text-accent">Labour sheet</Link><Link href={`/factory/expenses/wood?month=${month}`} className="min-h-11 py-3 font-semibold text-accent">Wood sheet</Link></div>
+    <p className="mt-8 text-xs font-semibold uppercase tracking-[0.14em] text-muted">Live workshop status · {open.length} open {open.length === 1 ? "order" : "orders"}</p>
     {urgent.length > 0 && <section className="mt-9">
       <SectionHeading action={<Link href="/factory/orders" className="text-sm font-semibold text-accent">All orders</Link>}>Urgent · {urgent.length}</SectionHeading>
       <RecordList empty="Nothing urgent." rows={urgent.map((order) => {

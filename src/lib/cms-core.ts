@@ -38,6 +38,11 @@ export function currentMonth(): string {
   return today().slice(0, 7);
 }
 
+/** A complete calendar month value accepted by the CMS month pickers. */
+export function isMonth(value: string | undefined): value is string {
+  return typeof value === "string" && /^(19|[2-9]\d)\d{2}-(0[1-9]|1[0-2])$/.test(value);
+}
+
 export function addDays(date: string, days: number): string {
   return isoDate(new Date(Date.parse(`${date}T00:00:00Z`) + days * 86_400_000));
 }

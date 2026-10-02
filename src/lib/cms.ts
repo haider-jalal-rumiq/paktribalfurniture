@@ -4,7 +4,7 @@ import { openOrderStatuses } from "@/content/cms";
 import { claimsAreAdmin } from "@/lib/auth";
 import { URGENT_WITHIN_DAYS, addDays, monthRange, today } from "@/lib/cms-core";
 import { readAll } from "@/lib/cms-read";
-import { availableCredit } from "@/lib/accounting-core";
+import { availableCredit, labourTotals, sumRupees, woodTotals } from "@/lib/accounting-core";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { Client, Database, Expense, Order, Invoice, BalanceEntry, LabourEntry, WoodEntry, ShopSale, ShopInvoice, ShopExpense, InventoryItem } from "@/types/database";
 
@@ -35,7 +35,7 @@ export async function getClient(id: string): Promise<Client | null> {
   return data;
 }
 
-export async function getOrders(filters: { status?: string; clientId?: string; urgentOnly?: boolean } = {}): Promise<OrderWithClient[]> {
+export async function getOrders(filters: { status?: string; clientId?: string; urgentOnly?: boolean; from?: string; before?: string } = {}): Promise<OrderWithClient[]> {
   const supabase = await createSupabaseServerClient();
   if (!supabase) return [];
   const data = await readAll((from, to) => {
@@ -43,6 +43,8 @@ export async function getOrders(filters: { status?: string; clientId?: string; u
     if (filters.status) query = query.eq("status", filters.status);
     if (filters.clientId) query = query.eq("client_id", filters.clientId);
     if (filters.urgentOnly) query = query.eq("urgent", true);
+    if (filters.from) query = query.gte("order_date", filters.from);
+    if (filters.before) query = query.lt("order_date", filters.before);
     return query.order("order_no", { ascending: true }).order("id").range(from, to);
   });
   return (data ?? []) as OrderWithClient[];
@@ -90,7 +92,7 @@ export async function getExpenses(month: string): Promise<Expense[]> {
     .order("spent_on", { ascending: false }).order("id").range(from, to)) ?? [];
 }
 
-export type InvoiceFilters = { client?: string; from?: string; to?: string; status?: "issued" | "void" };
+export type InvoiceFilters = { client?: string; from?: string; to?: string; before?: string; status?: "issued" | "void" };
 export async function getInvoices(filters: InvoiceFilters = {}): Promise<Invoice[]> {
   const supabase = await createSupabaseServerClient();
   if (!supabase) return [];
@@ -99,6 +101,7 @@ export async function getInvoices(filters: InvoiceFilters = {}): Promise<Invoice
     if (filters.client) query = query.eq("client_id", filters.client);
     if (filters.from) query = query.gte("issued_on", filters.from);
     if (filters.to) query = query.lte("issued_on", filters.to);
+    if (filters.before) query = query.lt("issued_on", filters.before);
     if (filters.status) query = query.eq("status", filters.status);
     return query.order("issued_on", { ascending: false }).order("invoice_no", { ascending: false }).range(from, to);
   }) ?? [];
@@ -255,6 +258,60 @@ export async function getFinancialTotals() {
   const values = data as { added: string; expenses: string; labourPaid: string; woodPaid?: string; sales: string; openOrders: number };
   const added = BigInt(values.added), expenses = BigInt(values.expenses), labourPaid = BigInt(values.labourPaid), woodPaid = BigInt(values.woodPaid ?? "0");
   return { added, expenses: expenses + labourPaid + woodPaid, credit: availableCredit(added, expenses, labourPaid, woodPaid), sales: BigInt(values.sales), openOrders: values.openOrders };
+}
+
+export type FactoryMonthReport = {
+  month: string;
+  expenses: Expense[];
+  labour: LabourEntry[];
+  wood: WoodEntry[];
+  invoices: Invoice[];
+  orders: OrderWithClient[];
+  totals: {
+    generalExpenses: bigint;
+    labourPaid: bigint;
+    woodPaid: bigint;
+    expenses: bigint;
+    sales: bigint;
+    orders: number;
+    orderItems: number;
+  };
+};
+
+/**
+ * The factory dashboard and its printable reports share one month ledger.
+ * Every query uses the same half-open date range so the first day of the next
+ * month can never leak into the selected month.
+ */
+export async function getFactoryMonthReport(month: string): Promise<FactoryMonthReport> {
+  const { start, end } = monthRange(month);
+  const [expenses, labour, wood, invoices, orders] = await Promise.all([
+    getExpenses(month),
+    getLabourEntries(month, true),
+    getWoodEntries(month, true),
+    getInvoices({ from: start, before: end, status: "issued" }),
+    getOrders({ from: start, before: end }),
+  ]);
+  const generalExpenses = sumRupees(expenses);
+  const labourPaid = labour.reduce((sum, row) => sum + labourTotals(row).paid, 0n);
+  const woodPaid = woodTotals(wood).paid;
+  return {
+    month,
+    expenses,
+    labour,
+    wood,
+    invoices,
+    orders,
+    totals: {
+      generalExpenses,
+      labourPaid,
+      woodPaid,
+      expenses: generalExpenses + labourPaid + woodPaid,
+      sales: invoices.reduce((sum, row) => sum + BigInt(row.total_amount), 0n),
+      orders: orders.length,
+      orderItems: orders.reduce((sum, order) => sum + order.items.reduce((count, item) => count + item.quantity, 0), 0),
+    },
+  };
 }
 
 export * from "@/lib/cms-core";

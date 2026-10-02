@@ -1,27 +1,27 @@
 import Link from "next/link";
+import { FileDown } from "lucide-react";
 import { CmsPage, EmptyState, SectionHeading } from "@/components/cms/cms-page";
 import { ExpenseTabs } from "@/components/cms/expense-tabs";
 import { StatCard } from "@/components/cms/stat-card";
-import { Button } from "@/components/ui/button";
+import { Button, ButtonLink } from "@/components/ui/button";
 import { Field, Input } from "@/components/ui/field";
 import { expenseCategoryLabel, labourExpenseLabel } from "@/content/cms";
 import { ExpenseForm } from "@/features/cms/expense-form";
 import { RecordAction } from "@/features/cms/record-action";
-import { currentMonth, getExpenses, getLabourEntries, getWoodEntries, monthLabel } from "@/lib/cms";
-import { labourTotals, showDate, sumRupees, woodTotals } from "@/lib/accounting-core";
+import { currentMonth, getFactoryMonthReport, isMonth, monthLabel } from "@/lib/cms";
+import { showDate } from "@/lib/accounting-core";
 import { formatPkr } from "@/lib/money";
 export const metadata = { title: "Expenses" };
 
 export default async function ExpensesPage({ searchParams }: { searchParams: Promise<{ month?: string }> }) {
   const { month: requested } = await searchParams;
-  const month = requested && /^(19|[2-9]\d)\d{2}-(0[1-9]|1[0-2])$/.test(requested) ? requested : currentMonth();
-  const [expenses, labour, wood] = await Promise.all([getExpenses(month), getLabourEntries(month, true), getWoodEntries(month, true)]);
-  const general = sumRupees(expenses);
-  const labourPaid = labour.reduce((sum, row) => sum + labourTotals(row).paid, 0n);
-  const woodPaid = woodTotals(wood).paid;
+  const month = isMonth(requested) ? requested : currentMonth();
+  const report = await getFactoryMonthReport(month);
+  const { expenses, labour, wood } = report;
+  const { generalExpenses: general, labourPaid, woodPaid } = report.totals;
   const categories = new Map<string, bigint>();
   for (const row of expenses) categories.set(row.category, (categories.get(row.category) ?? 0n) + BigInt(row.amount));
-  return <CmsPage title="Expenses" eyebrow="Workshop">
+  return <CmsPage title="Expenses" eyebrow="Workshop" actions={<ButtonLink href={`/factory/expenses/print?month=${month}`} size="sm" variant="outline"><FileDown className="h-4 w-4" aria-hidden="true" />Print / PDF</ButtonLink>}>
     <ExpenseTabs active="general" />
     <form action="/factory/expenses" className="mb-6 flex items-end gap-3"><Field label="Expense month" htmlFor="expenseMonth"><Input id="expenseMonth" name="month" type="month" defaultValue={month} required /></Field><Button type="submit" variant="outline">Show</Button></form>
     <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4"><StatCard label="Total expenses" value={formatPkr(general + labourPaid + woodPaid)} tone="accent" /><StatCard label="General expenses" value={formatPkr(general)} /><StatCard label={labourExpenseLabel} value={formatPkr(labourPaid)} hint="Advance + salary paid, by payment date" /><StatCard label="Wood payments" value={formatPkr(woodPaid)} hint="Actual payments, by payment date" /></div>
