@@ -8,6 +8,7 @@ import {
   isDueUrgently,
   daysUntil,
   monthRange,
+  isMonth,
   orderBalance,
   shiftMonth,
   summariseExpenses,
@@ -78,6 +79,9 @@ assert.match(today(), /^\d{4}-\d{2}-\d{2}$/);
 
 assert.deepEqual(monthRange("2026-09"), { start: "2026-09-01", end: "2026-10-01" });
 assert.deepEqual(monthRange("2026-12"), { start: "2026-12-01", end: "2027-01-01" });
+assert.equal(isMonth("2026-09"), true);
+assert.equal(isMonth("2026-13"), false);
+assert.equal(isMonth(undefined), false);
 assert.equal(shiftMonth("2026-01", -1), "2025-12");
 assert.equal(shiftMonth("2026-12", 1), "2027-01");
 

@@ -63,9 +63,18 @@ try {
     await page.getByRole("button", { name: "Unlock", exact: true }).click();
     await page.getByRole("heading", { name: "This section is locked" }).waitFor({ state: "detached" });
   }
+  check("Dashboard defaults to the current Pakistan month", await page.getByRole("link", { name: "October 2026", exact: true }).getAttribute("aria-current") === "page");
+  check("October starts with zero monthly entries", await page.getByText("Expenses", { exact: true }).locator("..").locator("..").getByText("Rs 0", { exact: true }).isVisible()
+    && await page.getByText("Total sales", { exact: true }).locator("..").locator("..").getByText("Rs 0", { exact: true }).isVisible()
+    && await page.getByText("Orders created", { exact: true }).locator("..").locator("..").getByText("0", { exact: true }).isVisible());
+  await page.getByRole("link", { name: "September 2026", exact: true }).click();
+  await page.waitForURL(url => url.pathname === "/factory" && url.searchParams.get("month") === "2026-09");
+  check("Month picker stays synchronized after a quick month change", await page.getByLabel("Choose another month", { exact: true }).inputValue() === "2026-09");
   await page.getByText("Rs 22,000", { exact: true }).waitFor();
-  check("Expenses include general expenses and paid labour", true);
-  check("Invoices contribute to sales", await page.getByText("Rs 34,500", { exact: true }).count() === 1);
+  check("September restores its expenses and paid labour", true);
+  check("September restores its invoice sales", await page.getByText("Rs 34,500", { exact: true }).count() === 1);
+  check("September restores order and item totals", await page.getByText("Orders created", { exact: true }).locator("..").locator("..").getByText("3", { exact: true }).isVisible()
+    && await page.getByText("Order items", { exact: true }).locator("..").locator("..").getByText("17", { exact: true }).isVisible());
   check("Dark system preference still renders white", await page.evaluate(() => getComputedStyle(document.body).backgroundColor === "rgb(255, 255, 255)" && getComputedStyle(document.documentElement).colorScheme === "light"));
   await page.screenshot({ path: `${OUT}/dashboard-desktop.png`, fullPage: true });
   await go(page, "/factory/orders");
@@ -122,11 +131,12 @@ try {
   await page.getByRole("alert").filter({ hasText: "Please try again." }).waitFor();
   check("Failed saves show a usable error and re-enable submit", await page.getByRole("button", { name: "Add balance", exact: true }).isEnabled() && fixture.db.balance_entries.length === 2);
   await page.unroute("**/api/cms/balances");
-  await go(page, "/factory/expenses");
+  await go(page, "/factory/expenses?month=2026-09");
   check("Against order is removed", await page.getByLabel("Against order").count() === 0);
   check("Expense category is free text", await page.getByLabel("Category", { exact: true }).evaluate(el => el.tagName) === "INPUT");
   await page.getByLabel("Amount (Rs)", { exact: true }).fill("1000");
   await page.getByLabel("Category", { exact: true }).fill("Custom transport");
+  await page.getByLabel("Date", { exact: true }).fill("2026-09-15");
   await page.getByRole("button", { name: "Add expense", exact: true }).click();
   await page.getByText("Custom transport", { exact: true }).waitFor();
   check("Custom categories are saved", fixture.db.expenses.some(row => row.category === "Custom transport"));
@@ -165,6 +175,7 @@ try {
   await go(page, "/factory/expenses/labour/new?month=2026-09");
   check("Add form links back to the labour entries list", await page.getByRole("link", { name: "View labour entries", exact: true }).getAttribute("href") === "/factory/expenses/labour?month=2026-09");
   await page.getByLabel("Worker name").fill("QA Second Worker");
+  await page.getByLabel("Payment date", { exact: true }).fill("2026-10-02");
   check("Labour form offers monthly, daily, and per-item pay", await page.getByRole("radio").count() === 3);
   await page.getByLabel("Monthly salary (Rs)", { exact: true }).fill("12000");
   await page.getByLabel("Per-day salary (Rs)", { exact: true }).fill("1000");
@@ -202,6 +213,7 @@ try {
   check("Saved labour entry appears in the labour entries list", await page.getByText("QA Second Worker", { exact: true }).isVisible());
   await go(page, "/factory/invoices/new");
   await page.getByLabel("Client", { exact: true }).selectOption(fixture.client.id);
+  await page.getByLabel("Invoice date", { exact: true }).fill("2026-10-02");
   await page.getByRole("button", { name: "Add invoice item", exact: true }).click();
   await page.getByLabel("Item", { exact: true }).fill("QA wardrobe");
   await page.getByLabel("Stock / order", { exact: true }).selectOption("Stock");
@@ -214,9 +226,12 @@ try {
   check("Invoice snapshots client branding details", created.total_amount === 5000 && created.client_name === fixture.client.name);
   const replay = await context.request.post(`${BASE}/api/cms/invoices`, { data: { id: created.id, clientId: created.client_id, issuedOn: created.issued_on, notes: "", items: created.items } });
   check("Invoice retries do not create duplicate sales", replay.ok() && fixture.db.invoices.length === 4);
-  await go(page, "/factory");
-  await page.getByText("Rs 176,000", { exact: true }).waitFor();
-  check("Invoices increase sales without changing expenses", await page.getByText("Rs 39,500", { exact: true }).count() === 1);
+  await go(page, "/factory?month=2026-10");
+  await page.getByText("Rs 103,000", { exact: true }).waitFor();
+  check("October dashboard shows only October expenses", true);
+  check("October invoice increases October sales only", await page.getByText("Rs 5,000", { exact: true }).count() === 1);
+  await go(page, "/factory?month=2026-09");
+  check("September dashboard remains unchanged after October entries", await page.getByText("Rs 73,000", { exact: true }).count() === 1 && await page.getByText("Rs 34,500", { exact: true }).count() === 1);
   await go(page, `/factory/invoices/${created.id}/edit`);
   await page.getByLabel("Unit amount (Rs)", { exact: true }).fill("4000");
   await page.getByRole("button", { name: "Save invoice", exact: true }).click();
@@ -224,8 +239,8 @@ try {
   check("Editing an invoice updates its total", created.total_amount === 8000);
   const voided = await context.request.patch(`${BASE}/api/cms/invoices/${created.id}`, { data: { status: "void" } });
   check("Voiding preserves invoice record", voided.ok() && created.status === "void" && fixture.db.invoices.length === 4);
-  await go(page, "/factory");
-  check("Voided invoices are excluded from sales", await page.getByText("Rs 34,500", { exact: true }).count() === 1);
+  await go(page, "/factory?month=2026-10");
+  check("Voided invoices are excluded from their month", await page.getByText("Total sales", { exact: true }).locator("..").locator("..").getByText("Rs 0", { exact: true }).isVisible());
   await go(page, `/factory/invoices?client=${fixture.client.id}&from=2026-09-20&to=2026-09-26`);
   check("Client and inclusive date filters include both boundaries", await page.getByText("PTF-0001", { exact: true }).count() === 1 && await page.getByText("PTF-0002", { exact: true }).count() === 1 && await page.getByText("PTF-0003", { exact: true }).count() === 0);
   await page.screenshot({ path: `${OUT}/invoices-desktop.png`, fullPage: true });
@@ -237,7 +252,7 @@ try {
   check("Overpaid labour rejected", badLabour.status() === 400);
   const backup = await (await context.request.get(`${BASE}/api/cms/export`)).json();
   check("Backup includes invoices, balances, labour, wood and embedded order items", backup.version === 4 && backup.invoices.length === 4 && backup.balance_entries.length === 2 && backup.labour_entries.length === 2 && backup.wood_entries.length === 3 && backup.orders.some(order => order.id === fixture.order.id && order.items.length === 3));
-  for (const [name, path] of [["invoice", `/factory/invoices/${fixture.db.invoices[0].id}`], ["order", `/factory/orders/${fixture.order.id}/print`], ["labour", "/factory/expenses/labour/print?month=2026-09"]]) {
+  for (const [name, path] of [["invoice", `/factory/invoices/${fixture.db.invoices[0].id}`], ["order", `/factory/orders/${fixture.order.id}/print`], ["labour", "/factory/expenses/labour/print?month=2026-09"], ["dashboard", "/factory/print?month=2026-09"], ["expenses", "/factory/expenses/print?month=2026-09"]]) {
     await go(page, path); await page.locator(".ptf-document img").waitFor();
     await page.screenshot({ path: `${OUT}/${name}-print-preview.png`, fullPage: true });
     await page.emulateMedia({ media: "print" });
@@ -262,7 +277,7 @@ try {
   fixture.db.invoices[0].total_amount = savedTotal;
   await page.emulateMedia({ media: null });
   await page.setViewportSize({ width: 375, height: 812 });
-  for (const [name, path] of [["dashboard", "/factory"], ["orders", "/factory/orders"], ["invoices", "/factory/invoices"], ["labour", "/factory/expenses/labour?month=2026-09"], ["wood", "/factory/expenses/wood?month=2026-11"], ["invoice", `/factory/invoices/${fixture.db.invoices[0].id}`]]) {
+  for (const [name, path] of [["dashboard", "/factory?month=2026-10"], ["orders", "/factory/orders"], ["invoices", "/factory/invoices"], ["labour", "/factory/expenses/labour?month=2026-09"], ["wood", "/factory/expenses/wood?month=2026-11"], ["invoice", `/factory/invoices/${fixture.db.invoices[0].id}`]]) {
     await go(page, path);
     if (name === "orders") { await page.locator(".order-client > summary").filter({ hasText: "QA Pak Turk" }).click(); await page.locator(".order-branch > summary").first().click(); }
     check(`${name} fits a 375px mobile screen`, await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1));
