@@ -2,9 +2,10 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { Layers } from "lucide-react";
+import { Layers, Pencil } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { RecordAction } from "@/features/cms/record-action";
 import { invoiceNumber, showDate } from "@/lib/accounting-core";
 import { formatPkr } from "@/lib/money";
 import type { Invoice } from "@/types/database";
@@ -58,6 +59,23 @@ export function InvoiceClientGroup({ clientName, invoices, combinable }: { clien
               </div>
               <span className="break-all text-sm font-semibold tabular-nums">{formatPkr(row.total_amount)}</span>
             </Link>
+            {/* Outside the Link: a button inside a link is not clickable. */}
+            <div className="flex shrink-0 items-center gap-1">
+              {/* A voided invoice cannot be edited — the save rejects it. */}
+              {row.status === "issued" && <Link
+                href={`/factory/invoices/${row.id}/edit`}
+                aria-label={`Edit ${invoiceNumber(row.invoice_no)}`}
+                className="inline-flex min-h-11 items-center gap-1 rounded-[var(--radius-ui)] px-2 text-sm font-semibold text-accent hover:bg-wash"
+              >
+                <Pencil className="h-4 w-4" aria-hidden="true" />
+                <span className="sr-only sm:not-sr-only">Edit</span>
+              </Link>}
+              <RecordAction
+                url={`/api/cms/invoices/${row.id}`}
+                label="Delete"
+                confirmation={`Delete ${invoiceNumber(row.invoice_no)} completely? It disappears from your records and from Total sales. Stock it took out is not put back. Void it instead to keep the record. This cannot be undone.`}
+              />
+            </div>
           </li>
         ))}
       </ul>
