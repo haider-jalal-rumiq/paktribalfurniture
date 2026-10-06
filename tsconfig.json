@@ -34,7 +34,9 @@
     "**/*.tsx",
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts",
-    "**/*.mts"
+    "**/*.mts",
+    ".verify-cms/next/types/**/*.ts",
+    ".verify-cms/next/dev/types/**/*.ts"
   ],
   "exclude": [
     "node_modules",

@@ -74,6 +74,18 @@ export function monthRange(month: string): { start: string; end: string } {
   };
 }
 
+/**
+ * First and last day of a month, both inclusive — what a from/to date filter
+ * wants. monthRange() above is exclusive at the end because it feeds `lt`.
+ */
+export function monthDates(month: string): { from: string; to: string } {
+  const [year, index] = month.split("-").map(Number);
+  return {
+    from: isoDate(new Date(Date.UTC(year, index - 1, 1))),
+    to: isoDate(new Date(Date.UTC(year, index, 0))),
+  };
+}
+
 export function shiftMonth(month: string, by: number): string {
   const [year, index] = month.split("-").map(Number);
   return new Date(Date.UTC(year, index - 1 + by, 1)).toISOString().slice(0, 7);

@@ -8,6 +8,7 @@ import {
   isDueUrgently,
   daysUntil,
   monthRange,
+  monthDates,
   isMonth,
   orderBalance,
   shiftMonth,
@@ -79,6 +80,12 @@ assert.match(today(), /^\d{4}-\d{2}-\d{2}$/);
 
 assert.deepEqual(monthRange("2026-09"), { start: "2026-09-01", end: "2026-10-01" });
 assert.deepEqual(monthRange("2026-12"), { start: "2026-12-01", end: "2027-01-01" });
+// The invoice filter's "to" is inclusive, so the month ends on its last day.
+assert.deepEqual(monthDates("2026-09"), { from: "2026-09-01", to: "2026-09-30" });
+assert.deepEqual(monthDates("2026-10"), { from: "2026-10-01", to: "2026-10-31" });
+assert.deepEqual(monthDates("2026-02"), { from: "2026-02-01", to: "2026-02-28" });
+assert.deepEqual(monthDates("2028-02"), { from: "2028-02-01", to: "2028-02-29" });
+assert.deepEqual(monthDates("2026-12"), { from: "2026-12-01", to: "2026-12-31" });
 assert.equal(isMonth("2026-09"), true);
 assert.equal(isMonth("2026-13"), false);
 assert.equal(isMonth(undefined), false);
