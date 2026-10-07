@@ -59,7 +59,7 @@ try {
   // Home, Orders, Invoices, Clients and Settings sit behind the shared PIN;
   // Inventory and Expenses do not. Unlock once for the rest of this run.
   if (await page.getByText("This section is locked").isVisible().catch(() => false)) {
-    await page.getByLabel("Password", { exact: true }).fill("1555");
+    await page.getByLabel("Password", { exact: true }).fill("1777");
     await page.getByRole("button", { name: "Unlock", exact: true }).click();
     await page.getByRole("heading", { name: "This section is locked" }).waitFor({ state: "detached" });
   }

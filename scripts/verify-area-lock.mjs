@@ -55,7 +55,7 @@ try {
   check("wrong PIN is rejected", await page.getByText("Wrong password.").isVisible());
 
   // Correct PIN unlocks this tab, and every other locked tab too.
-  await page.getByLabel("Password", { exact: true }).fill("1555");
+  await page.getByLabel("Password", { exact: true }).fill("1777");
   await page.getByRole("button", { name: "Unlock" }).click();
   await page.getByRole("heading", { name: "This section is locked" }).waitFor({ state: "detached" });
   check("correct PIN unlocks orders", await page.getByRole("heading", { name: "Orders" }).isVisible());
@@ -91,7 +91,7 @@ try {
   check("shop expenses has no PIN screen", !(await shopPage.getByText("This section is locked").isVisible().catch(() => false)));
   await shopPage.goto(BASE + "/shop", { waitUntil: "networkidle" });
   check("shop sales is locked by default", await shopPage.getByText("This section is locked").isVisible());
-  await shopPage.getByLabel("Password", { exact: true }).fill("1555");
+  await shopPage.getByLabel("Password", { exact: true }).fill("1777");
   await shopPage.getByRole("button", { name: "Unlock" }).click();
   await shopPage.waitForSelector("text=This section is locked", { state: "detached" });
   check("shop sales unlocks with the same PIN", await shopPage.getByRole("heading", { name: "Shop sales" }).isVisible());
@@ -104,7 +104,7 @@ try {
     await page.getByRole("button", { name: "Lock", exact: true }).click();
   }
   await page.screenshot({ path: ".verify-cms/area-lock-screen.png" });
-  await page.getByLabel("Password", { exact: true }).fill("1555");
+  await page.getByLabel("Password", { exact: true }).fill("1777");
   await page.getByRole("button", { name: "Unlock", exact: true }).click();
   await page.getByRole("heading", { name: "This section is locked" }).waitFor({ state: "detached" });
   await page.screenshot({ path: ".verify-cms/area-lock-unlocked-strip.png" });
