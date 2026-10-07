@@ -7,7 +7,7 @@
  * Enforced client-side only — anyone with the admin login already reaches
  * the same data through the API regardless of this screen.
  */
-export const AREA_LOCK_PIN = "1555";
+export const AREA_LOCK_PIN = "1777";
 
 export type LockedApp = "factory" | "shop";
 

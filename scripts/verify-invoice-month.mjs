@@ -55,7 +55,7 @@ try {
 
   await page.goto(BASE + "/factory/invoices", { waitUntil: "networkidle" });
   if (await page.getByText("This section is locked").isVisible().catch(() => false)) {
-    await page.getByLabel("Password", { exact: true }).fill("1555");
+    await page.getByLabel("Password", { exact: true }).fill("1777");
     await page.getByRole("button", { name: "Unlock", exact: true }).click();
     await page.getByRole("heading", { name: "This section is locked" }).waitFor({ state: "detached" });
   }
