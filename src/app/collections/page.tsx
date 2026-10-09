@@ -5,7 +5,7 @@ import { CategoryFilters } from "@/components/catalog/category-filters";
 import { ProductCard } from "@/components/catalog/product-card";
 import { Container } from "@/components/layout/container";
 import { PageHero } from "@/components/layout/page-hero";
-import { Reveal } from "@/components/motion";
+import { Reveal, TileReveal } from "@/components/motion";
 import { ButtonLink } from "@/components/ui/button";
 import { categories, getCategory } from "@/content/catalog";
 import { getPublishedProducts } from "@/lib/catalog";
@@ -30,7 +30,7 @@ export default async function CollectionsPage({ searchParams }: { searchParams: 
           <CategoryFilters active={activeCategory?.slug} />
           {products.length > 0 ? (
             <div className="mt-12 grid gap-x-5 gap-y-10 sm:grid-cols-2 lg:grid-cols-3">
-              {products.map((product, index) => <Reveal key={product.id} delay={(index % 3) * 0.05}><ProductCard product={product} /></Reveal>)}
+              {products.map((product, index) => <TileReveal key={product.id} index={index}><ProductCard product={product} /></TileReveal>)}
             </div>
           ) : activeCategory ? (
             <Reveal className="mt-12 border border-hairline bg-surface p-8 sm:p-12">
@@ -40,7 +40,7 @@ export default async function CollectionsPage({ searchParams }: { searchParams: 
             </Reveal>
           ) : (
             <div className="mt-12 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {categories.map((category, index) => <Reveal key={category.slug} delay={(index % 3) * 0.05}><CategoryCard category={category} className="h-[25rem]" priority={index < 3} /></Reveal>)}
+              {categories.map((category, index) => <TileReveal key={category.slug} index={index}><CategoryCard category={category} className="h-[25rem]" priority={index < 3} /></TileReveal>)}
             </div>
           )}
         </Container>
