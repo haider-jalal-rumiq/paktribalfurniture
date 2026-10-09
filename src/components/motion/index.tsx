@@ -157,6 +157,40 @@ export function PanelReveal({ children, className, direction = "up", delay = 0 }
   );
 }
 
+/**
+ * A large editorial scene that settles into place as it enters the viewport,
+ * then eases upward as the reader continues. Reserved for rare marketing
+ * moments rather than repeated catalogue rows.
+ */
+export function ScrollScene({ children, className }: { children: ReactNode; className?: string }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const reduce = useReducedMotionSafe();
+  const { scrollYProgress } = useScroll({ target: ref, offset: ["start end", "end start"] });
+  const transform = useTransform(
+    scrollYProgress,
+    [0, 0.22, 0.72, 1],
+    [
+      "translate3d(0, 9%, 0) scale(0.94)",
+      "translate3d(0, 0, 0) scale(1)",
+      "translate3d(0, -2%, 0) scale(1)",
+      "translate3d(0, -5%, 0) scale(0.985)",
+    ],
+  );
+  const opacity = useTransform(scrollYProgress, [0, 0.16, 0.9, 1], [0.35, 1, 1, 0.72]);
+
+  return (
+    <div ref={ref} className={className}>
+      <motion.div
+        data-motion-parallax=""
+        className="h-full w-full"
+        style={{ opacity: reduce ? 1 : opacity, transform: reduce ? "none" : transform }}
+      >
+        {children}
+      </motion.div>
+    </div>
+  );
+}
+
 export function ScrollRail({ children, className }: { children: ReactNode; className?: string }) {
   const ref = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start end", "end start"] });
