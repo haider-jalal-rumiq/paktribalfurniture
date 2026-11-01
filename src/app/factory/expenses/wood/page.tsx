@@ -42,9 +42,9 @@ export default async function WoodPage({ searchParams }: { searchParams: Promise
     </div>
 
     <section className="mt-9">
-      <SectionHeading>Purchaser accounts · all time</SectionHeading>
-      <p className="mb-4 text-sm text-muted">Open a purchaser to see every purchase and payment, or to record the next transaction.</p>
-      <WoodAccountList entries={allEntries} month={month} />
+      <SectionHeading>Wood suppliers · all time</SectionHeading>
+      <p className="mb-4 text-sm text-muted">Open a supplier to see their orders and payments, or to record the next transaction.</p>
+      <WoodAccountList entries={allEntries} />
     </section>
 
     <section className="mt-9">
