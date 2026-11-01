@@ -5,6 +5,9 @@ export const site = {
   shortName: "PTF",
   description:
     "A digital catalogue for Pak Tribal Furniture, featuring solid-wood furniture, home accents, and custom enquiries.",
+  /** One plain sentence about the business, for search snippets and AI answers. */
+  summary:
+    "Solid-wood furniture maker in Islamabad, Pakistan. Browse rosewood, cedar, pine, mango and walnut pieces, or send a custom enquiry.",
   url: rawSiteUrl,
   instagramUrl: "https://www.instagram.com/paktribalfurniture/",
   whatsapp: {

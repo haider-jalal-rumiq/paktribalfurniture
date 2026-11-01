@@ -9,13 +9,26 @@ import { Reveal, TileReveal } from "@/components/motion";
 import { ButtonLink } from "@/components/ui/button";
 import { categories, getCategory } from "@/content/catalog";
 import { getPublishedProducts } from "@/lib/catalog";
-import { pageMetadata } from "@/lib/seo";
+import { JsonLd, pageMetadata, productListSchema } from "@/lib/seo";
 
-export const metadata: Metadata = pageMetadata({
-  title: "Furniture collections",
-  description: "Browse Pak Tribal Furniture beds, sofas, dining, storage, decor, and custom furniture collections.",
-  path: "/collections",
-});
+/** Each category is its own page in search, so it gets its own title and canonical URL. */
+export async function generateMetadata({ searchParams }: { searchParams: Promise<{ category?: string }> }): Promise<Metadata> {
+  const { category } = await searchParams;
+  const activeCategory = category ? getCategory(category) : undefined;
+  if (!activeCategory) {
+    return pageMetadata({
+      title: "Furniture collections",
+      description: "Browse Pak Tribal Furniture beds, sofas, dining, storage, decor, and custom furniture collections.",
+      path: "/collections",
+    });
+  }
+  return pageMetadata({
+    title: `${activeCategory.name} collection`,
+    description: activeCategory.description,
+    path: `/collections?category=${activeCategory.slug}`,
+    image: activeCategory.image,
+  });
+}
 
 export default async function CollectionsPage({ searchParams }: { searchParams: Promise<{ category?: string }> }) {
   const { category: requestedCategory } = await searchParams;
@@ -24,6 +37,7 @@ export default async function CollectionsPage({ searchParams }: { searchParams: 
 
   return (
     <>
+      {products.length > 0 && <JsonLd data={productListSchema(products)} />}
       <PageHero eyebrow="The catalogue" title={activeCategory?.name ?? "Furniture for every part of home."} description={activeCategory?.description ?? "Browse the full catalogue by category, then open a piece to send a detailed enquiry."} />
       <section className="py-12 sm:py-16">
         <Container>

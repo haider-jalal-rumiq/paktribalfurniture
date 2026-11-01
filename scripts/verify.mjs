@@ -169,6 +169,26 @@ async function main() {
     }
     record("page titles are unique", new Set(seenTitles).size === seenTitles.length, seenTitles.join(" | "));
     record("page descriptions are unique", new Set(seenDescriptions).size === seenDescriptions.length, seenDescriptions.join(" | "));
+
+    const robotsText = await (await page.request.get(BASE + "/robots.txt")).text();
+    const disallowed = robotsText.split("\n").filter((line) => line.startsWith("Disallow:"));
+    record("robots.txt keeps the admin areas out of crawling", ["/api/", "/factory/", "/shop/", "/studio/"].every((path) => robotsText.includes(`Disallow: ${path}`)), disallowed.join(" "));
+    record("robots.txt points to the sitemap", /^Sitemap: .+\/sitemap\.xml$/m.test(robotsText), "");
+
+    const sitemapText = await (await page.request.get(BASE + "/sitemap.xml")).text();
+    const categoryUrls = (sitemapText.match(/\?category=/g) ?? []).length;
+    record("sitemap lists every category page", categoryUrls >= 8, `${categoryUrls} category URLs`);
+
+    const llmsResponse = await page.request.get(BASE + "/llms.txt");
+    const llmsText = await llmsResponse.text();
+    record("llms.txt describes the business for AI assistants", llmsResponse.ok() && llmsText.startsWith("# Pak Tribal Furniture") && llmsText.includes("## Collections"), `${llmsText.split("\n").length} lines`);
+
+    const missing = await page.request.get(BASE + "/this-piece-does-not-exist");
+    record("unknown pages return HTTP 404", missing.status() === 404, `status ${missing.status()}`);
+
+    await page.goto(BASE + "/", { waitUntil: "domcontentloaded" });
+    const schemaTypes = await page.evaluate(() => [...document.querySelectorAll('script[type="application/ld+json"]')].map((script) => JSON.parse(script.textContent ?? "{}")["@type"]));
+    record("home page declares the store and website entities", schemaTypes.includes("FurnitureStore") && schemaTypes.includes("WebSite"), schemaTypes.join(", "));
     await page.close();
   }
 

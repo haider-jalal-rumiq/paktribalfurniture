@@ -6,7 +6,7 @@ import { ChromeGate } from "@/components/layout/chrome-gate";
 import { Footer } from "@/components/layout/footer";
 import { Header } from "@/components/layout/header";
 import { site } from "@/content/site";
-import { JsonLd, organizationSchema } from "@/lib/seo";
+import { DEFAULT_SOCIAL_IMAGE, JsonLd, organizationSchema, websiteSchema } from "@/lib/seo";
 
 import "./globals.css";
 
@@ -46,11 +46,11 @@ export const metadata: Metadata = {
     locale: "en_PK",
     siteName: site.name,
     url: site.url,
-    images: ["/images/furniture/hero-living-room.jpg"],
+    images: [DEFAULT_SOCIAL_IMAGE],
   },
   twitter: {
     card: "summary_large_image",
-    images: ["/images/furniture/hero-living-room.jpg"],
+    images: [DEFAULT_SOCIAL_IMAGE],
   },
 };
 
@@ -79,6 +79,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           <Footer />
         </ChromeGate>
         <JsonLd data={organizationSchema()} />
+        <JsonLd data={websiteSchema()} />
       </body>
     </html>
   );
