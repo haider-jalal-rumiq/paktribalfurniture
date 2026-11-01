@@ -96,7 +96,7 @@ export default async function DashboardPage({ searchParams }: { searchParams: Pr
     </section>
 
     <section className="mt-9">
-      <SectionHeading action={<Link href="/factory/orders?status=completed" className="text-sm font-semibold text-accent">All completed</Link>}>
+      <SectionHeading action={<Link href="/factory/orders?folder=delivered" className="text-sm font-semibold text-accent">All completed</Link>}>
         Completed · {completed.length}
       </SectionHeading>
       <RecordList
