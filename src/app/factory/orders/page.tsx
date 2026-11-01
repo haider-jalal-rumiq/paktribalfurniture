@@ -2,9 +2,10 @@ import { Plus } from "lucide-react";
 import Link from "next/link";
 import { CmsPage, EmptyState } from "@/components/cms/cms-page";
 import { OrderTree } from "@/components/cms/order-tree";
+import { TabNav } from "@/components/cms/tab-nav";
 import { Badge } from "@/components/ui/badge";
 import { ButtonLink } from "@/components/ui/button";
-import { orderStatuses } from "@/content/cms";
+import { folderStatuses, statusChoicesFor, type OrderFolder } from "@/content/cms";
 import { OrderFilters } from "@/features/cms/order-filters";
 import { OrderItemStatus, OrderUrgentToggle } from "@/features/cms/order-item-status";
 import { orderTotal } from "@/lib/accounting-core";
@@ -12,22 +13,27 @@ import { getClients, getOrders } from "@/lib/cms";
 import { formatPkr } from "@/lib/money";
 import { itemMatchesStatus, orderMatchesFilters } from "@/lib/order-filters";
 import { isUrgentOrder } from "@/lib/orders";
-import { cn } from "@/lib/utils";
 
 export const metadata = { title: "Orders" };
 
-export default async function OrdersPage({ searchParams }: { searchParams: Promise<{ status?: string; client?: string; view?: string; item?: string }> }) {
+export default async function OrdersPage({ searchParams }: { searchParams: Promise<{ folder?: string; status?: string; client?: string; view?: string; item?: string }> }) {
   const params = await searchParams;
   const byItems = params.view === "items";
-  const status = params.status === "urgent" || orderStatuses.some((row) => row.value === params.status) ? params.status : undefined;
+  // Delivered and completed orders live in their own folder, off the working list.
+  const folder: OrderFolder = params.folder === "delivered" ? "delivered" : "active";
+  const status = (params.status === "urgent" && folder === "active") || statusChoicesFor(folder, byItems).some((row) => row.value === params.status) ? params.status : undefined;
   const clients = await getClients();
   const clientId = clients.some((row) => row.id === params.client) ? params.client : undefined;
   const orders = (await getOrders({
     clientId,
+    statuses: folderStatuses(folder),
     // In item view, normal statuses belong to items. Urgency remains derived.
     status: !byItems && status !== "urgent" ? status : undefined,
   })).filter((order) => orderMatchesFilters(order, { status, clientId, byItems }, isUrgentOrder(order)));
-  const shown = clients.filter((client) => (!clientId || client.id === clientId) && (!status || orders.some((row) => row.client_id === client.id)));
+  // The active folder lists every client, so a new order can start from it.
+  // A status filter or the delivered folder lists only clients with matching orders.
+  const narrowed = Boolean(status) || folder === "delivered";
+  const shown = clients.filter((client) => (!clientId || client.id === clientId) && (!narrowed || orders.some((row) => row.client_id === client.id)));
 
   // Two ways to read the same orders: grouped by client, or every item flat.
   const itemQuery = params.item?.trim().toLowerCase() ?? "";
@@ -42,6 +48,8 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
 
   const keep = (extra: Record<string, string>) => {
     const query = new URLSearchParams();
+    if (folder === "delivered") query.set("folder", folder);
+    if (byItems) query.set("view", "items");
     if (status) query.set("status", status);
     if (clientId) query.set("client", clientId);
     if (itemQuery) query.set("item", params.item!.trim());
@@ -53,23 +61,24 @@ export default async function OrdersPage({ searchParams }: { searchParams: Promi
   };
 
   return <CmsPage title="Orders" eyebrow="Clients / orders / items" actions={<ButtonLink href="/factory/orders/new" size="sm"><Plus className="h-4 w-4" aria-hidden="true" />New order</ButtonLink>}>
-    <nav aria-label="View" className="mb-5 flex gap-2 border-b border-hairline">
-      {([{ key: "", label: "By client" }, { key: "items", label: "By item" }] as const).map((tab) => (
-        <Link
-          key={tab.key}
-          href={keep({ view: tab.key })}
-          aria-current={byItems === (tab.key === "items") ? "page" : undefined}
-          className={cn(
-            "min-h-12 border-b-2 px-4 py-3 text-sm font-semibold",
-            byItems === (tab.key === "items") ? "border-accent text-accent" : "border-transparent text-muted hover:text-ink",
-          )}
-        >
-          {tab.label}
-        </Link>
-      ))}
-    </nav>
+    <TabNav
+      label="Folder"
+      active={folder}
+      items={[
+        { key: "active", label: "Active", href: keep({ folder: "", status: "" }) },
+        { key: "delivered", label: "Delivered & completed", href: keep({ folder: "delivered", status: "" }) },
+      ]}
+    />
+    <TabNav
+      label="View"
+      active={byItems ? "items" : "client"}
+      items={[
+        { key: "client", label: "By client", href: keep({ view: "" }) },
+        { key: "items", label: "By item", href: keep({ view: "items" }) },
+      ]}
+    />
 
-    <OrderFilters byItems={byItems} clientId={clientId} clients={clients} itemQuery={params.item?.trim()} status={status} />
+    <OrderFilters byItems={byItems} clientId={clientId} clients={clients} folder={folder} itemQuery={params.item?.trim()} status={status} />
 
     {byItems ? <>
       <div className="mb-4 flex flex-wrap items-baseline justify-between gap-3">
