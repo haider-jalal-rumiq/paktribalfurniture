@@ -12,6 +12,9 @@ export interface PushMessage {
   tag?: string;
 }
 
+/** A slow push service should not hold a reminder run until the function times out. */
+const PUSH_TIMEOUT_MS = 10_000;
+
 let configured = false;
 
 function configure(): boolean {
@@ -42,30 +45,36 @@ export async function sendPush(
   }
 
   const payload = JSON.stringify(message);
-  const dead: string[] = [];
-  let sent = 0;
-  let failed = 0;
-
-  for (const subscription of subscriptions) {
-    try {
-      await webpush.sendNotification(
+  const outcomes = await Promise.allSettled(
+    subscriptions.map((subscription) =>
+      webpush.sendNotification(
         {
           endpoint: subscription.endpoint,
           keys: { p256dh: subscription.p256dh, auth: subscription.auth },
         },
         payload,
-      );
+        { timeout: PUSH_TIMEOUT_MS },
+      ),
+    ),
+  );
+
+  const dead: string[] = [];
+  let sent = 0;
+  let failed = 0;
+
+  outcomes.forEach((outcome, index) => {
+    if (outcome.status === "fulfilled") {
       sent += 1;
-    } catch (error) {
-      const status = (error as { statusCode?: number }).statusCode;
-      if (status === 404 || status === 410) {
-        dead.push(subscription.id);
-      } else {
-        failed += 1;
-        console.error("Push delivery failed", { status });
-      }
+      return;
     }
-  }
+    const status = (outcome.reason as { statusCode?: number }).statusCode;
+    if (status === 404 || status === 410) {
+      dead.push(subscriptions[index].id);
+      return;
+    }
+    failed += 1;
+    console.error("Push delivery failed", { status });
+  });
 
   if (dead.length) {
     await supabase.from("push_subscriptions").delete().in("id", dead);
