@@ -3,9 +3,9 @@ import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 
 import { getCategory } from "@/content/catalog";
-import type { Product } from "@/types/database";
+import type { CatalogProduct } from "@/types/database";
 
-export function ProductCard({ product }: { product: Product }) {
+export function ProductCard({ product }: { product: CatalogProduct }) {
   const category = getCategory(product.category_slug);
   const image = product.image_urls[0] ?? category?.image ?? "/images/furniture/workshop.jpg";
   return (

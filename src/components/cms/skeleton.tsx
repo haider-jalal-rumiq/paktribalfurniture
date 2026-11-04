@@ -1,9 +1,5 @@
 import { CmsPage } from "@/components/cms/cms-page";
-import { cn } from "@/lib/utils";
-
-export function Shimmer({ className }: { className?: string }) {
-  return <div className={cn("animate-pulse rounded-[var(--radius-ui)] bg-wash", className)} />;
-}
+import { Shimmer } from "@/components/shared/shimmer";
 
 /**
  * Shown while a /cms route's data loads. Without it the tab bar highlights the

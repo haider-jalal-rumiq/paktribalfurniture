@@ -6,6 +6,7 @@ import type { Database } from "@/types/database";
 const ALLOWED_IMAGE_TYPES = new Set(["image/jpeg", "image/png", "image/webp", "image/avif"]);
 const MAX_FILE_SIZE = 8 * 1024 * 1024;
 const MAX_FILES = 6;
+const PHOTO_CACHE_SECONDS = "31536000";
 
 export function parseProductForm(formData: FormData): { input: ProductInput; files: File[] } | { error: string } {
   const files = formData.getAll("images").filter((entry): entry is File => entry instanceof File && entry.size > 0);
@@ -38,7 +39,12 @@ export async function uploadProductImages(supabase: SupabaseClient<Database>, us
   for (const file of files) {
     const safeName = file.name.toLowerCase().replace(/[^a-z0-9.]+/g, "-").replace(/^-|-$/g, "") || "product-image";
     const path = `${userId}/${crypto.randomUUID()}-${safeName}`;
-    const { error } = await supabase.storage.from("product-images").upload(path, file, { contentType: file.type, upsert: false });
+    // Every upload gets a new path, so a cached URL never points at different bytes and can be kept for a year.
+    const { error } = await supabase.storage.from("product-images").upload(path, file, {
+      contentType: file.type,
+      upsert: false,
+      cacheControl: PHOTO_CACHE_SECONDS,
+    });
     if (error) {
       console.error("Could not upload product image", { message: error.message });
       return { error: "A product photo could not be uploaded.", paths };
