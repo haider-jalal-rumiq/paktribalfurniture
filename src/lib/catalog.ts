@@ -3,19 +3,19 @@ import "server-only";
 import { cache } from "react";
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import type { CatalogueProduct, Inquiry, Product } from "@/types/database";
+import type { CatalogProduct, Inquiry, Product } from "@/types/database";
 
-/** Must match CatalogueProduct. Description and photo-gallery detail load on the product page only. */
-const CATALOGUE_CARD_COLUMNS = "id, slug, name, category_slug, short_description, image_urls, featured, updated_at";
+/** Must match CatalogProduct. Description and photo-gallery detail load on the product page only. */
+const CATALOG_CARD_COLUMNS = "id, slug, name, category_slug, short_description, image_urls, featured, updated_at";
 
 export const getPublishedProducts = cache(
-  async (category?: string): Promise<CatalogueProduct[]> => {
+  async (category?: string): Promise<CatalogProduct[]> => {
     const supabase = await createSupabaseServerClient();
     if (!supabase) return [];
 
     let query = supabase
       .from("products")
-      .select(CATALOGUE_CARD_COLUMNS)
+      .select(CATALOG_CARD_COLUMNS)
       .eq("published", true)
       .order("featured", { ascending: false })
       .order("created_at", { ascending: false });
