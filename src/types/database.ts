@@ -394,6 +394,11 @@ export interface Database {
 }
 
 export type Product = Database["public"]["Tables"]["products"]["Row"];
+/** The fields a catalogue card and the sitemap render. Long text stays out of list queries. */
+export type CatalogueProduct = Pick<
+  Product,
+  "id" | "slug" | "name" | "category_slug" | "short_description" | "image_urls" | "featured" | "updated_at"
+>;
 export type Inquiry = Database["public"]["Tables"]["inquiries"]["Row"];
 export type Client = Database["public"]["Tables"]["clients"]["Row"];
 export type Order = Database["public"]["Tables"]["orders"]["Row"];

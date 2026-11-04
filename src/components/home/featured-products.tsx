@@ -3,9 +3,9 @@ import { Container } from "@/components/layout/container";
 import { SectionHeading } from "@/components/layout/section-heading";
 import { MaskReveal, TileReveal } from "@/components/motion";
 import { ButtonLink } from "@/components/ui/button";
-import type { Product } from "@/types/database";
+import type { CatalogueProduct } from "@/types/database";
 
-export function FeaturedProducts({ products }: { products: Product[] }) {
+export function FeaturedProducts({ products }: { products: CatalogueProduct[] }) {
   if (products.length === 0) return null;
   return (
     <section className="py-2 sm:py-8">
