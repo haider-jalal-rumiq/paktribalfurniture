@@ -47,3 +47,7 @@ next-env.d.ts
 # Leftover from local-disk node_modules workaround (Drive is not NTFS)
 node_modules.orphan/
 .next.orphan/
+
+# Raw stock photos: scripts/import-website-stock.mjs converts them to WebP
+# for Supabase Storage, so the originals must never be committed or deployed.
+/public/images/website-stock/

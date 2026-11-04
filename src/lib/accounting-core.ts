@@ -28,10 +28,13 @@ export function woodTotals(rows: readonly { purchased_amount: number; paid_amoun
 }
 
 /** Group every purchase and payment into its purchaser's running account. */
+/** Supplier names match regardless of case or stray spaces. */
+export const woodAccountKey = (name: string): string => name.trim().toLocaleLowerCase("en");
+
 export function woodAccounts<T extends { id: string; purchaser_name: string; purchased_amount: number; paid_amount: number }>(rows: readonly T[]) {
   const accounts = new Map<string, { id: string; name: string; purchased: bigint; paid: bigint; remaining: bigint; entries: T[] }>();
   for (const entry of rows) {
-    const id = entry.purchaser_name.trim().toLocaleLowerCase("en");
+    const id = woodAccountKey(entry.purchaser_name);
     const account = accounts.get(id) ?? { id, name: entry.purchaser_name.trim(), purchased: 0n, paid: 0n, remaining: 0n, entries: [] };
     account.purchased += BigInt(entry.purchased_amount);
     account.paid += BigInt(entry.paid_amount);

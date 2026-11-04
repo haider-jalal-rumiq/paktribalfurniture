@@ -23,6 +23,28 @@ export const orderStatuses = [
 /** Statuses that still expect a delivery, so they drive reminders and balances. */
 export const openOrderStatuses = ["pending", "in_progress", "ready"] as const;
 
+/** Finished orders. They leave the active list for the Delivered folder. */
+export const deliveredOrderStatuses = ["completed", "delivered"] as const;
+
+export type OrderFolder = "active" | "delivered";
+
+/** Active keeps every order not yet delivered, cancelled ones included. */
+export const activeOrderStatuses: readonly string[] = orderStatuses
+  .map((row) => row.value)
+  .filter((value) => !(deliveredOrderStatuses as readonly string[]).includes(value));
+
+export function folderStatuses(folder: OrderFolder): readonly string[] {
+  return folder === "delivered" ? deliveredOrderStatuses : activeOrderStatuses;
+}
+
+/**
+ * Status choices for a folder's filter. Item view keeps every status, because
+ * an item can be finished while its order is still in progress.
+ */
+export function statusChoicesFor(folder: OrderFolder, byItems: boolean): readonly { value: string; label: string }[] {
+  return orderStatuses.filter((row) => byItems || folderStatuses(folder).includes(row.value));
+}
+
 export const paymentMethods = [
   { value: "cash", label: "Cash" },
   { value: "bank", label: "Bank transfer" },
